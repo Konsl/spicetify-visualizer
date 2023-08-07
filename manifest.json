@@ -3,7 +3,6 @@
     "description": "NCS-style visualizer for Spicetify",
     "preview": "resources/screenshot.png",
     "readme": "README.md",
-    "branch": "dist",
     "authors": [
         { "name": "Konsl", "url": "https://github.com/Konsl" }
     ],
