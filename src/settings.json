@@ -1,0 +1,6 @@
+{
+  "displayName": "NCS Visualizer",
+  "nameId": "ncs-visualizer",
+  "icon": "css/icon-inactive.svg",
+  "activeIcon": "css/icon-active.svg"
+}
