@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import AnimatedCanvas from './AnimatedCanvas';
-import { decibelsToAmplitude, calculateAmplitude } from '../utils';
+import { sampleAmplitudeMovingAverage, decibelsToAmplitude } from '../utils';
 import FastNoise from "fastnoise-lite";
 
 export default function Visualizer(props: { themeColor: string, audioAnalysis: SpotifyAudioAnalysis }) {
@@ -47,7 +47,7 @@ export default function Visualizer(props: { themeColor: string, audioAnalysis: S
 
             const currentProgress = Spicetify.Player.getProgress() / 1000;
 
-            const amplitude = calculateAmplitude(data.amplitudeCurve, currentProgress);
+            const amplitude = sampleAmplitudeMovingAverage(data.amplitudeCurve, currentProgress, 0.15);
             const sphereRadius = minRadius + (maxRadius - minRadius) * amplitude;
             const spherePosX = ctx.canvas.width / 2;
             const spherePosY = ctx.canvas.height / 2;
