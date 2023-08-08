@@ -1,22 +1,37 @@
 import React, { useMemo } from 'react';
 import AnimatedCanvas from './AnimatedCanvas';
-import { calculateAmplitude } from '../utils';
+import { decibelsToAmplitude, calculateAmplitude } from '../utils';
 import FastNoise from "fastnoise-lite";
 
 export default function Visualizer(props: { themeColor: string, audioAnalysis: SpotifyAudioAnalysis }) {
-    const fastNoise = useMemo(() => {
-        const instance = new FastNoise(props.audioAnalysis.meta.timestamp);
+    const { fastNoise, amplitudeCurve } = useMemo(() => {
+        const fastNoise = new FastNoise(props.audioAnalysis.meta.timestamp);
 
-        instance.SetNoiseType(FastNoise.NoiseType.Perlin);
-        instance.SetFractalType(FastNoise.FractalType.FBm);
-        instance.SetFractalOctaves(3);
-        instance.SetFractalLacunarity(1.5);
-        instance.SetFractalGain(0.5);
+        fastNoise.SetNoiseType(FastNoise.NoiseType.Perlin);
+        fastNoise.SetFractalType(FastNoise.FractalType.FBm);
+        fastNoise.SetFractalOctaves(3);
+        fastNoise.SetFractalLacunarity(1.5);
+        fastNoise.SetFractalGain(0.5);
 
-        return instance;
+        const segments = props.audioAnalysis.segments;
+
+        const amplitudeCurve: Point2D[] = segments.flatMap(segment => [
+            { x: segment.start, y: decibelsToAmplitude(segment.loudness_start) },
+            { x: segment.start + segment.loudness_max_time, y: decibelsToAmplitude(segment.loudness_max) }
+        ]);
+
+        if (segments.length) {
+            const lastSegment = segments[segments.length - 1];
+            amplitudeCurve.push({
+                x: lastSegment.start + lastSegment.duration,
+                y: decibelsToAmplitude(lastSegment.loudness_end)
+            });
+        }
+
+        return { fastNoise, amplitudeCurve };
     }, [props.audioAnalysis]);
 
-    return <AnimatedCanvas data={{ ...props, fastNoise }}
+    return <AnimatedCanvas data={{ themeColor: props.themeColor, fastNoise, amplitudeCurve }}
         draw={(ctx, data, _) => {
             ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 
@@ -32,7 +47,7 @@ export default function Visualizer(props: { themeColor: string, audioAnalysis: S
 
             const currentProgress = Spicetify.Player.getProgress() / 1000;
 
-            const amplitude = calculateAmplitude(data.audioAnalysis, currentProgress);
+            const amplitude = calculateAmplitude(data.amplitudeCurve, currentProgress);
             const sphereRadius = minRadius + (maxRadius - minRadius) * amplitude;
             const spherePosX = ctx.canvas.width / 2;
             const spherePosY = ctx.canvas.height / 2;
@@ -58,7 +73,7 @@ export default function Visualizer(props: { themeColor: string, audioAnalysis: S
                     let vz = (fractal + fractalDisplacement * 0.5) * amplitude;
 
                     const distanceFromSphere = Math.sqrt(vx * vx + vy * vy + vz * vz);
-                    if(distanceFromSphere > sphereRadius) continue;
+                    if (distanceFromSphere > sphereRadius) continue;
 
                     let strength = (distanceFromSphere - featherRadius) / feather;
                     strength = Math.max(0, Math.min(strength, 1));

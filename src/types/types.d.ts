@@ -95,3 +95,8 @@ interface SpotifyAudioAnalysis {
     segments: SpotifyAudioAnalysis.Segment[];
     tatums: SpotifyAudioAnalysis.Tatum[];
 }
+
+interface Point2D {
+    x: number;
+    y: number;
+}
