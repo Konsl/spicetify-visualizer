@@ -75,10 +75,10 @@ export default function Visualizer(props: { themeColor: string, audioAnalysis: S
                     ctx.arc(vx, vy, dotRadius, 0, 2 * Math.PI);
                 }
 
-            /*ctx.shadowOffsetX = 0;
+            ctx.shadowOffsetX = 0;
             ctx.shadowOffsetY = 0;
             ctx.shadowBlur = 15;
-            ctx.shadowColor = data.themeColor;*/
+            ctx.shadowColor = data.themeColor;
             ctx.fill();
         }}
         style={{ "width": "100%", "height": "100%", "objectFit": "contain" }}
