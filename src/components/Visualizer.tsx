@@ -99,7 +99,9 @@ export default function Visualizer(props: { themeColor: string, audioAnalysis: S
         style={{ "width": "100%", "height": "100%", "objectFit": "contain" }}
         onResize={(canvas) => {
             const size = Math.min(canvas.clientWidth, canvas.clientHeight);
-            canvas.width = size;
-            canvas.height = size;
+            const dpiIndependentSize = Math.round(size * window.devicePixelRatio);
+
+            canvas.width = dpiIndependentSize;
+            canvas.height = dpiIndependentSize;
         }} />
 }
