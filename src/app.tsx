@@ -16,12 +16,14 @@ export default function App() {
 
     useEffect(() => {
         const updatePlayerState = async (newState: Spicetify.PlayerState) => {
-            if (!newState.track) {
+            const item = newState?.item ?? newState?.track;
+
+            if (!item) {
                 setState(VisualizerState.ERROR);
                 return;
             }
 
-            const uri = newState.track.uri;
+            const uri = item.uri;
             if (!Spicetify.URI.isTrack(uri)) {
                 setState(VisualizerState.ERROR);
                 return;
