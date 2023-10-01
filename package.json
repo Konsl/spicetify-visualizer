@@ -5,12 +5,14 @@
   "scripts": {
     "build": "spicetify-creator",
     "build-local": "spicetify-creator --out=dist --minify",
-    "watch": "spicetify-creator --watch"
+    "watch": "spicetify-creator --watch",
+    "format": "prettier --write src/"
   },
   "license": "MIT",
   "devDependencies": {
     "@types/react": "^18.2.18",
     "@types/react-dom": "^18.2.7",
+    "prettier": "^3.0.3",
     "spicetify-creator": "^1.0.14"
   },
   "dependencies": {
