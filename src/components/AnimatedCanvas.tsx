@@ -4,14 +4,15 @@ export default function AnimatedCanvas<T>(
 	props: {
 		draw: (ctx: CanvasRenderingContext2D, data: T, time: number) => void;
 		data: T;
+		isEnabled: boolean;
 		onResize: (canvas: HTMLCanvasElement) => void;
 	} & Omit<React.CanvasHTMLAttributes<HTMLCanvasElement>, "onResize">
 ) {
-	const { draw, data, style: canvasStyle, onResize: onCanvasResize, ...canvasProps } = props;
+	const { draw, data, isEnabled, style: canvasStyle, onResize: onCanvasResize, ...canvasProps } = props;
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 
 	useEffect(() => {
-		if (!draw) return;
+		if (!isEnabled || !draw) return;
 
 		const canvas = canvasRef.current;
 		if (!canvas) return;
@@ -29,7 +30,7 @@ export default function AnimatedCanvas<T>(
 		return () => {
 			if (requestId) cancelAnimationFrame(requestId);
 		};
-	}, [draw, data]);
+	}, [draw, data, isEnabled]);
 
 	useEffect(() => {
 		if (!canvasRef.current) return;

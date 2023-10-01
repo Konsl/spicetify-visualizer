@@ -3,8 +3,14 @@ import AnimatedCanvas from "./AnimatedCanvas";
 import { sampleAmplitudeMovingAverage, decibelsToAmplitude } from "../utils";
 import FastNoise from "fastnoise-lite";
 
-export default function Visualizer(props: { themeColor: string; audioAnalysis: SpotifyAudioAnalysis }) {
+export default function Visualizer(props: { isEnabled: boolean; themeColor: string; audioAnalysis?: SpotifyAudioAnalysis }) {
 	const { fastNoise, amplitudeCurve } = useMemo(() => {
+		if (!props.audioAnalysis)
+			return {
+				fastNoise: new FastNoise(0),
+				amplitudeCurve: [{ x: 0, y: 0 }]
+			};
+
 		const fastNoise = new FastNoise(props.audioAnalysis.meta.timestamp);
 
 		fastNoise.SetNoiseType(FastNoise.NoiseType.Perlin);
@@ -33,7 +39,21 @@ export default function Visualizer(props: { themeColor: string; audioAnalysis: S
 
 	return (
 		<AnimatedCanvas
+			isEnabled={props.isEnabled}
+			style={{
+				width: "100%",
+				height: "100%",
+				objectFit: "contain",
+				...(props.isEnabled ? {} : { display: "none" })
+			}}
 			data={{ themeColor: props.themeColor, fastNoise, amplitudeCurve }}
+			onResize={canvas => {
+				const size = Math.min(canvas.clientWidth, canvas.clientHeight);
+				const dpiIndependentSize = Math.round(size * window.devicePixelRatio);
+
+				canvas.width = dpiIndependentSize;
+				canvas.height = dpiIndependentSize;
+			}}
 			draw={(ctx, data, _) => {
 				ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 
@@ -95,14 +115,6 @@ export default function Visualizer(props: { themeColor: string; audioAnalysis: S
 				ctx.shadowBlur = 15;
 				ctx.shadowColor = data.themeColor;
 				ctx.fill();
-			}}
-			style={{ width: "100%", height: "100%", objectFit: "contain" }}
-			onResize={canvas => {
-				const size = Math.min(canvas.clientWidth, canvas.clientHeight);
-				const dpiIndependentSize = Math.round(size * window.devicePixelRatio);
-
-				canvas.width = dpiIndependentSize;
-				canvas.height = dpiIndependentSize;
 			}}
 		/>
 	);

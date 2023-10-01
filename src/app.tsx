@@ -61,14 +61,16 @@ export default function App() {
 		<div className={styles.container}>
 			{state == VisualizerState.LOADING ? (
 				<LoadingIcon />
-			) : state == VisualizerState.RUNNING ? (
-				<Visualizer
-					audioAnalysis={trackData.audioAnalysis as SpotifyAudioAnalysis}
-					themeColor={trackData.themeColor ?? DEFAULT_THEME_COLOR}
-				/>
-			) : (
+			) : state == VisualizerState.ERROR ? (
 				<div className={styles.unavailable_message}>{"(• _ • )"}</div>
-			)}
+			) : null}
+
+            
+			<Visualizer
+                isEnabled={state == VisualizerState.RUNNING}
+				audioAnalysis={trackData.audioAnalysis}
+				themeColor={trackData.themeColor ?? DEFAULT_THEME_COLOR}
+			/>
 		</div>
 	);
 }
