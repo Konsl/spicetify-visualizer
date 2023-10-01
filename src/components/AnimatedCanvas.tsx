@@ -9,7 +9,7 @@ export default function AnimatedCanvas<T>(props: {
     const canvasRef = useRef<HTMLCanvasElement>(null);
 
     useEffect(() => {
-        if(!draw) return;
+        if (!draw) return;
 
         const canvas = canvasRef.current;
         if (!canvas) return;
@@ -30,16 +30,16 @@ export default function AnimatedCanvas<T>(props: {
 
     }, [draw, data]);
 
-    const resizeObserver = new ResizeObserver(() => {
-        if(canvasRef.current) onCanvasResize(canvasRef.current);
-    });
-
     useEffect(() => {
-        if(!canvasRef.current) return;
+        if (!canvasRef.current) return;
+
+        const resizeObserver = new ResizeObserver(() => {
+            if (canvasRef.current) onCanvasResize(canvasRef.current);
+        });
 
         resizeObserver.observe(canvasRef.current);
         return () => resizeObserver.disconnect();
-    }, []);
+    }, [onCanvasResize]);
 
     return <canvas ref={canvasRef} style={canvasStyle} {...canvasProps} />
 }
