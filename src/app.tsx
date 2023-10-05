@@ -7,7 +7,9 @@ import { DEFAULT_THEME_COLOR } from "./resources";
 enum VisualizerState {
 	LOADING,
 	RUNNING,
-	ERROR
+	ERROR_NOT_PLAYING,
+	ERROR_UNSUPPORTED_TRACK_TYPE,
+	ERROR_NO_NETWORK
 }
 
 export default function App() {
@@ -19,13 +21,13 @@ export default function App() {
 			const item = newState?.item ?? newState?.track;
 
 			if (!item) {
-				setState(VisualizerState.ERROR);
+				setState(VisualizerState.ERROR_NOT_PLAYING);
 				return;
 			}
 
 			const uri = item.uri;
 			if (!Spicetify.URI.isTrack(uri)) {
-				setState(VisualizerState.ERROR);
+				setState(VisualizerState.ERROR_UNSUPPORTED_TRACK_TYPE);
 				return;
 			}
 
@@ -39,7 +41,7 @@ export default function App() {
 			]);
 
 			if (!audioAnalysis) {
-				setState(VisualizerState.ERROR);
+				setState(VisualizerState.ERROR_NO_NETWORK);
 				return;
 			}
 
@@ -61,13 +63,18 @@ export default function App() {
 		<div className={styles.container}>
 			{state == VisualizerState.LOADING ? (
 				<LoadingIcon />
-			) : state == VisualizerState.ERROR ? (
-				<div className={styles.unavailable_message}>{"(• _ • )"}</div>
+			) : state == VisualizerState.ERROR_NOT_PLAYING ? (
+				<div className={styles.unavailable_message}>{"Start playing a song to see the visualization!"}</div>
+			) : state == VisualizerState.ERROR_UNSUPPORTED_TRACK_TYPE ? (
+				<div className={styles.unavailable_message}>{"Error: The type of track you're listening to is currently not supported"}</div>
+			) : state == VisualizerState.ERROR_NO_NETWORK ? (
+				<div className={styles.unavailable_message}>
+					{"Error: The audio analysis could not be loaded, please check your internet connection"}
+				</div>
 			) : null}
 
-            
 			<Visualizer
-                isEnabled={state == VisualizerState.RUNNING}
+				isEnabled={state == VisualizerState.RUNNING}
 				audioAnalysis={trackData.audioAnalysis}
 				themeColor={trackData.themeColor ?? DEFAULT_THEME_COLOR}
 			/>
