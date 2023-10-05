@@ -40,11 +40,7 @@ export function calculateAmplitude(amplitudeCurve: Point2D[], position: number):
 	if (pointIndex > amplitudeCurve.length - 2) return point.y;
 	const nextPoint = amplitudeCurve[pointIndex + 1];
 
-	let amplitude = (position - point.x) / (nextPoint.x - point.x);
-	amplitude = smoothstep(amplitude);
-	amplitude = amplitude * (nextPoint.y - point.y) + point.y;
-
-	return amplitude;
+	return mapLinear(position, point.x, nextPoint.x, point.y, nextPoint.y);
 }
 
 export function sampleAmplitudeMovingAverage(amplitudeCurve: Point2D[], position: number, windowSize: number): number {
