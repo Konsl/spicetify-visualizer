@@ -14,8 +14,5 @@
     "@types/react-dom": "^18.2.7",
     "prettier": "^3.0.3",
     "spicetify-creator": "^1.0.14"
-  },
-  "dependencies": {
-    "fastnoise-lite": "^0.0.1"
   }
 }

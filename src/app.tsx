@@ -1,20 +1,23 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import styles from "./css/app.module.scss";
 import LoadingIcon from "./components/LoadingIcon";
 import Visualizer from "./components/Visualizer";
-import { DEFAULT_THEME_COLOR } from "./resources";
 
 enum VisualizerState {
 	LOADING,
 	RUNNING,
 	ERROR_NOT_PLAYING,
 	ERROR_UNSUPPORTED_TRACK_TYPE,
-	ERROR_NO_NETWORK
+	ERROR_NO_NETWORK,
+	ERROR_UNKNOWN
 }
 
 export default function App() {
 	const [state, setState] = useState<VisualizerState>(VisualizerState.LOADING);
-	const [trackData, setTrackData] = useState<{ audioAnalysis?: SpotifyAudioAnalysis; themeColor?: string }>({});
+	const [errorMessage, setErrorMessage] = useState<string>("");
+	const [trackData, setTrackData] = useState<{ audioAnalysis?: SpotifyAudioAnalysis; themeColor: Spicetify.Color }>({
+		themeColor: Spicetify.Color.fromHex("#535353")
+	});
 
 	useEffect(() => {
 		const updatePlayerState = async (newState: Spicetify.PlayerState) => {
@@ -35,9 +38,7 @@ export default function App() {
 
 			const [audioAnalysis, vibrantColor] = await Promise.all([
 				Spicetify.getAudioData(uri).catch(() => undefined) as Promise<SpotifyAudioAnalysis | undefined>,
-				Spicetify.colorExtractor(uri)
-					.then(colors => colors.VIBRANT)
-					.catch(() => undefined)
+				Spicetify.extractColorPreset(item.metadata.image_url).then(colors => colors[0].colorLight)
 			]);
 
 			if (!audioAnalysis) {
@@ -59,6 +60,11 @@ export default function App() {
 		return () => Spicetify.Player.removeEventListener("songchange", songChangeListener as PlayerEventListener);
 	}, []);
 
+	const onError = useCallback((msg: string) => {
+		setErrorMessage(msg);
+		setState(VisualizerState.ERROR_UNKNOWN);
+	}, []);
+
 	return (
 		<div className={styles.container}>
 			{state == VisualizerState.LOADING ? (
@@ -71,12 +77,15 @@ export default function App() {
 				<div className={styles.unavailable_message}>
 					{"Error: The audio analysis could not be loaded, please check your internet connection"}
 				</div>
+			) : state == VisualizerState.ERROR_UNKNOWN ? (
+				<div className={styles.unavailable_message}>{errorMessage}</div>
 			) : null}
 
 			<Visualizer
 				isEnabled={state == VisualizerState.RUNNING}
+				onError={onError}
 				audioAnalysis={trackData.audioAnalysis}
-				themeColor={trackData.themeColor ?? DEFAULT_THEME_COLOR}
+				themeColor={trackData.themeColor}
 			/>
 		</div>
 	);
