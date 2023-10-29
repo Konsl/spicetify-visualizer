@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from "react";
+import React, { useRef, useEffect, useState, useCallback } from "react";
 
 export default function AnimatedCanvas<T, U>(props: {
 	onInit: (ctx: WebGL2RenderingContext | null) => U;
@@ -12,6 +12,14 @@ export default function AnimatedCanvas<T, U>(props: {
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 	const [state, setState] = useState<U | null>(null);
 
+	const updateResolution = useCallback((canvas: HTMLCanvasElement) => {
+		const clientSize = Math.min(canvas.clientWidth, canvas.clientHeight);
+		const screenSize = Math.round(clientSize * window.devicePixelRatio);
+
+		if (canvas.width === screenSize && canvas.height === screenSize) return;
+		canvas.width = canvas.height = screenSize;
+	}, []);
+
 	useEffect(() => {
 		if (!onInit) return;
 
@@ -21,6 +29,7 @@ export default function AnimatedCanvas<T, U>(props: {
 		const context = canvas.getContext("webgl2");
 
 		const state = onInit(context);
+		updateResolution(canvas);
 		onResize(context, state);
 		setState(state);
 
@@ -56,11 +65,7 @@ export default function AnimatedCanvas<T, U>(props: {
 			const canvas = canvasRef.current;
 			if (!canvas) return;
 
-			const clientSize = Math.min(canvas.clientWidth, canvas.clientHeight);
-			const screenSize = Math.round(clientSize * window.devicePixelRatio);
-
-			if (canvas.width === screenSize && canvas.height === screenSize) return;
-			canvas.width = canvas.height = screenSize;
+			updateResolution(canvas);
 
 			const context = canvas.getContext("webgl2");
 			if (context && state) onResize(context, state);
@@ -77,7 +82,7 @@ export default function AnimatedCanvas<T, U>(props: {
 				width: "100%",
 				height: "100%",
 				objectFit: "contain",
-				...(isEnabled ? {} : { display: "none" })
+				...(isEnabled ? {} : { visibility: "hidden" })
 			}}
 		/>
 	);
