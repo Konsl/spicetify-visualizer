@@ -58,10 +58,10 @@ export function sampleAmplitudeMovingAverage(amplitudeCurve: Point2D[], position
 		if (windowStartIndex > amplitudeCurve.length - 2) return p1.y;
 		const p2 = amplitudeCurve[windowStartIndex + 1];
 
-		const pA = { x: windowStart, y: mapLinear(windowStart, p1.x, p2.x, p1.y, p2.y) };
-		const pB = { x: windowEnd, y: mapLinear(windowEnd, p1.x, p2.x, p1.y, p2.y) };
+		const yA = mapLinear(windowStart, p1.x, p2.x, p1.y, p2.y);
+		const yB = mapLinear(windowEnd, p1.x, p2.x, p1.y, p2.y);
 
-		integral = integrateLinearFunction(pA, pB);
+		return (yA + yB) / 2;
 	} else {
 		let p1 = amplitudeCurve[windowStartIndex];
 		let p2 = amplitudeCurve[windowStartIndex + 1];
