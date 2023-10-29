@@ -67,6 +67,13 @@ export default function App() {
 
 	return (
 		<div className={styles.container}>
+			<Visualizer
+				isEnabled={state == VisualizerState.RUNNING}
+				onError={onError}
+				audioAnalysis={trackData.audioAnalysis}
+				themeColor={trackData.themeColor}
+			/>
+			
 			{state == VisualizerState.LOADING ? (
 				<LoadingIcon />
 			) : state == VisualizerState.ERROR_NOT_PLAYING ? (
@@ -80,13 +87,6 @@ export default function App() {
 			) : state == VisualizerState.ERROR_UNKNOWN ? (
 				<div className={styles.unavailable_message}>{errorMessage}</div>
 			) : null}
-
-			<Visualizer
-				isEnabled={state == VisualizerState.RUNNING}
-				onError={onError}
-				audioAnalysis={trackData.audioAnalysis}
-				themeColor={trackData.themeColor}
-			/>
 		</div>
 	);
 }

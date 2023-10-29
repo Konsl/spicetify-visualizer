@@ -1,6 +1,5 @@
 .container {
-	display: flex;
-	flex-direction: column;
+	display: grid;
 
 	justify-content: center;
 	align-items: center;
@@ -8,6 +7,11 @@
 	// fill available space
 	position: fixed;
 	inset: 0;
+}
+
+.container > * {
+	grid-area: 1 / 1;
+	place-self: center;
 }
 
 .unavailable_message {
