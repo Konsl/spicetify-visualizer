@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useState } from "react";
 
 export default function AnimatedCanvas<T, U>(props: {
 	onInit: (ctx: WebGL2RenderingContext | null) => U;
@@ -10,33 +10,44 @@ export default function AnimatedCanvas<T, U>(props: {
 }) {
 	const { onInit, onResize, onRender, data, isEnabled } = props;
 	const canvasRef = useRef<HTMLCanvasElement>(null);
-	const stateRef = useRef<U | null>(null);
+	const [state, setState] = useState<U | null>(null);
 
 	useEffect(() => {
-		if (!isEnabled || !onRender) return;
+		if (!onInit) return;
 
 		const canvas = canvasRef.current;
 		if (!canvas) return;
 
 		const context = canvas.getContext("webgl2");
 
-		stateRef.current = onInit(context);
-		onResize(context, stateRef.current);
+		const state = onInit(context);
+		onResize(context, state);
+		setState(state);
+
+		return () => setState(null);
+	}, [onInit]);
+
+	useEffect(() => {
+		if (!isEnabled || !state || !onRender) return;
+
+		const canvas = canvasRef.current;
+		if (!canvas) return;
+
+		const context = canvas.getContext("webgl2");
 
 		let requestId = 0;
 		const wrapper = (time: number) => {
-			if (!stateRef.current) return;
+			if (!state) return;
 
-			onRender(context, data, stateRef.current, time);
+			onRender(context, data, state, time);
 			requestId = requestAnimationFrame(wrapper);
 		};
 
 		requestId = requestAnimationFrame(wrapper);
 		return () => {
 			if (requestId) cancelAnimationFrame(requestId);
-			stateRef.current = null;
 		};
-	}, [onInit, onRender, data, isEnabled]);
+	}, [onRender, data, state, isEnabled]);
 
 	useEffect(() => {
 		if (!canvasRef.current) return;
@@ -52,14 +63,12 @@ export default function AnimatedCanvas<T, U>(props: {
 			canvas.width = canvas.height = screenSize;
 
 			const context = canvas.getContext("webgl2");
-			if (!context) return;
-
-			if (stateRef.current) onResize(context, stateRef.current);
+			if (context && state) onResize(context, state);
 		});
 
 		resizeObserver.observe(canvasRef.current);
 		return () => resizeObserver.disconnect();
-	}, [onResize, data]);
+	}, [onResize, state]);
 
 	return (
 		<canvas
