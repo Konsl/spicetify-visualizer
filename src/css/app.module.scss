@@ -1,17 +1,15 @@
 .container {
-	display: grid;
-
-	justify-content: center;
-	align-items: center;
-
 	// fill available space
 	position: fixed;
 	inset: 0;
 }
 
 .container > * {
-	grid-area: 1 / 1;
-	place-self: center;
+	position: absolute;
+
+	top: 50%;
+	left: 50%;
+	translate: -50% -50%;
 }
 
 .unavailable_message {
