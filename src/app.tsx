@@ -21,7 +21,7 @@ export default function App() {
 
 	useEffect(() => {
 		const updatePlayerState = async (newState: Spicetify.PlayerState) => {
-			const item = newState?.item ?? newState?.track;
+			const item = newState?.item ?? newState?.item;
 
 			if (!item) {
 				setState(VisualizerState.ERROR_NOT_PLAYING);
@@ -36,9 +36,10 @@ export default function App() {
 
 			setState(VisualizerState.LOADING);
 
+			const trackId = Spicetify.URI.fromString(uri).id;
 			const [audioAnalysis, vibrantColor] = await Promise.all([
-				Spicetify.getAudioData(uri).catch(() => undefined) as Promise<SpotifyAudioAnalysis | undefined>,
-				Spicetify.extractColorPreset(item.metadata.image_url).then(colors => colors[0].colorLight)
+				Spicetify.CosmosAsync.get(`https://api.spotify.com/v1/audio-analysis/${trackId}`).catch((err) => console.log(err)) as Promise<SpotifyAudioAnalysis | undefined>,
+				Spicetify.extractColorPreset(item.metadata.image_url).then(colors => colors[0].colorLight).catch((err) => console.log(err))
 			]);
 
 			if (!audioAnalysis) {
