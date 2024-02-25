@@ -21,28 +21,34 @@ export default function App() {
 
 	useEffect(() => {
 		const updatePlayerState = async (newState: Spicetify.PlayerState) => {
-			const item = newState?.item ?? newState?.track;
+			const item = newState?.item;
 
 			if (!item) {
 				setState(VisualizerState.ERROR_NOT_PLAYING);
 				return;
 			}
 
-			const uri = item.uri;
-			if (!Spicetify.URI.isTrack(uri)) {
+			const uri = Spicetify.URI.fromString(item.uri);
+			if (uri.type !== Spicetify.URI.Type.TRACK) {
 				setState(VisualizerState.ERROR_UNSUPPORTED_TRACK_TYPE);
 				return;
 			}
 
 			setState(VisualizerState.LOADING);
 
+			const analysisRequestUrl = `https://spclient.wg.spotify.com/audio-attributes/v1/audio-analysis/${uri.id}?format=json`;
 			const [audioAnalysis, vibrantColor] = await Promise.all([
-				Spicetify.getAudioData(uri).catch(() => undefined) as Promise<SpotifyAudioAnalysis | undefined>,
+				Spicetify.CosmosAsync.get(analysisRequestUrl).catch(console.error) as Promise<SpotifyAudioAnalysis | undefined>,
 				Spicetify.extractColorPreset(item.metadata.image_url).then(colors => colors[0].colorLight)
 			]);
 
 			if (!audioAnalysis) {
 				setState(VisualizerState.ERROR_NO_NETWORK);
+				return;
+			}
+
+			if (audioAnalysis.error) {
+				onError(`Error ${audioAnalysis.error.status}: ${audioAnalysis.error.message}`);
 				return;
 			}
 
@@ -73,7 +79,7 @@ export default function App() {
 				audioAnalysis={trackData.audioAnalysis}
 				themeColor={trackData.themeColor}
 			/>
-			
+
 			{state == VisualizerState.LOADING ? (
 				<LoadingIcon />
 			) : state == VisualizerState.ERROR_NOT_PLAYING ? (
