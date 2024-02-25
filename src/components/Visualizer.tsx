@@ -290,7 +290,7 @@ export default function Visualizer(props: {
 		const uDotOffset = -0.9 / 2;
 		const uSphereRadius = mapLinear(uAmplitude, 0, 1, 0.75 * 0.9, 0.9);
 		const uFeather = Math.pow(uAmplitude + 3, 2) * (45 / 1568);
-		const uNoiseFrequency = 4 * 0.01;
+		const uNoiseFrequency = 4 / uDotCount;
 		const uNoiseAmplitude = 0.2 * 0.9;
 
 		gl.useProgram(state.particleShader);
