@@ -72,7 +72,7 @@ export default function App() {
 	}, []);
 
 	return (
-		<div className={styles.container}>
+		<div className="ncs-visualizer-container">
 			<Visualizer
 				isEnabled={state == VisualizerState.RUNNING}
 				onError={onError}
