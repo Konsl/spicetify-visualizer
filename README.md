@@ -26,3 +26,5 @@
 * Re-apply Spicetify by running `spicetify apply` from the terminal
 
 ---
+
+[CSS Snippet for Compatibility with Comfy Theme](https://github.com/Konsl/spicetify-ncs-visualizer/issues/21#issuecomment-2050515422)
