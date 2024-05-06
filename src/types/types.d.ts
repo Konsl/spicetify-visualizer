@@ -101,7 +101,8 @@ interface SpotifyAudioAnalysis {
 	};
 }
 
-interface Point2D {
+interface CurveEntry {
 	x: number;
 	y: number;
+	accumulatedIntegral?: number;
 }

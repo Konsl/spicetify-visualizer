@@ -1,6 +1,6 @@
 export const vertexShader = `#version 300 es
 
-uniform float uScaledTime;
+uniform float uNoiseOffset;
 uniform float uAmplitude;
 uniform int uSeed;
 
@@ -93,9 +93,9 @@ float fractalNoise(vec3 coord) {
 
 void main() {
     vec2 dotPos = vec2(float(gl_InstanceID % uDotCount), float(gl_InstanceID / uDotCount));
-    float noise = fractalNoise(vec3(dotPos * uNoiseFrequency, uScaledTime)) * uNoiseAmplitude;
+    float noise = fractalNoise(vec3(dotPos * uNoiseFrequency, uNoiseOffset)) * uNoiseAmplitude;
 
-    vec3 dotCenter = vec3(dotPos * uDotSpacing + uDotOffset + noise, (noise + 0.5 * uNoiseAmplitude) * uAmplitude);
+    vec3 dotCenter = vec3(dotPos * uDotSpacing + uDotOffset + noise, (noise + 0.5 * uNoiseAmplitude) * uAmplitude * 0.4);
     
     float distanceFromCenter = length(dotCenter);
     dotCenter /= distanceFromCenter;

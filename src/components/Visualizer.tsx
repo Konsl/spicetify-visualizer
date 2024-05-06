@@ -1,6 +1,6 @@
 import React, { useCallback, useMemo } from "react";
 import AnimatedCanvas from "./AnimatedCanvas";
-import { sampleAmplitudeMovingAverage, decibelsToAmplitude, mapLinear } from "../utils";
+import { sampleAmplitudeMovingAverage, decibelsToAmplitude, mapLinear, integrateLinearSegment, sampleAccumulatedIntegral } from "../utils";
 import { vertexShader as PARTICLE_VERT_SHADER, fragmentShader as PARTICLE_FRAG_SHADER } from "../shaders/particle";
 import { vertexShader as BLUR_VERT_SHADER, fragmentShader as BLUR_FRAG_SHADER } from "../shaders/blur";
 import { vertexShader as FINALIZE_VERT_SHADER, fragmentShader as FINALIZE_FRAG_SHADER } from "../shaders/finalize";
@@ -8,10 +8,7 @@ import { vertexShader as FINALIZE_VERT_SHADER, fragmentShader as FINALIZE_FRAG_S
 type CanvasData = {
 	themeColor: Spicetify.Color;
 	seed: number;
-	amplitudeCurve: {
-		x: number;
-		y: number;
-	}[];
+	amplitudeCurve: CurveEntry[];
 };
 
 type RendererState =
@@ -29,7 +26,7 @@ type RendererState =
 			inPositionLocBlur: number;
 			inPositionLocFinalize: number;
 
-			uScaledTimeLoc: WebGLUniformLocation;
+			uNoiseOffsetLoc: WebGLUniformLocation;
 			uAmplitudeLoc: WebGLUniformLocation;
 			uSeedLoc: WebGLUniformLocation;
 			uDotCountLoc: WebGLUniformLocation;
@@ -71,7 +68,7 @@ export default function Visualizer(props: {
 
 		const segments = props.audioAnalysis.segments;
 
-		const amplitudeCurve: Point2D[] = segments.flatMap(segment =>
+		const amplitudeCurve: CurveEntry[] = segments.flatMap(segment =>
 			segment.loudness_max_time
 				? [
 						{ x: segment.start, y: decibelsToAmplitude(segment.loudness_start) },
@@ -81,6 +78,13 @@ export default function Visualizer(props: {
 		);
 
 		if (segments.length) {
+			amplitudeCurve[0].accumulatedIntegral = 0;
+			for (let i = 1; i < amplitudeCurve.length; i++) {
+				const prev = amplitudeCurve[i - 1];
+				const curr = amplitudeCurve[i];
+				curr.accumulatedIntegral = (prev.accumulatedIntegral ?? 0) + integrateLinearSegment(prev, curr);
+			}
+
 			const lastSegment = segments[segments.length - 1];
 			amplitudeCurve.push({
 				x: lastSegment.start + lastSegment.duration,
@@ -158,7 +162,7 @@ export default function Visualizer(props: {
 		if (!particleShader) return { isError: true };
 
 		const inPositionLoc = gl.getAttribLocation(particleShader, "inPosition")!;
-		const uScaledTimeLoc = gl.getUniformLocation(particleShader, "uScaledTime")!;
+		const uNoiseOffsetLoc = gl.getUniformLocation(particleShader, "uNoiseOffset")!;
 		const uAmplitudeLoc = gl.getUniformLocation(particleShader, "uAmplitude")!;
 		const uSeedLoc = gl.getUniformLocation(particleShader, "uSeed")!;
 		const uDotCountLoc = gl.getUniformLocation(particleShader, "uDotCount")!;
@@ -223,7 +227,7 @@ export default function Visualizer(props: {
 			inPositionLocBlur,
 			inPositionLocFinalize,
 
-			uScaledTimeLoc,
+			uNoiseOffsetLoc,
 			uAmplitudeLoc,
 			uSeedLoc,
 			uDotCountLoc,
@@ -280,10 +284,12 @@ export default function Visualizer(props: {
 		gl.clearColor(0, 0, 0, 0);
 		gl.clear(gl.COLOR_BUFFER_BIT);
 
-		const uScaledTime = (Spicetify.Player.getProgress() / 1000) * 75 * 0.01;
-		const uAmplitude = sampleAmplitudeMovingAverage(data.amplitudeCurve, Spicetify.Player.getProgress() / 1000, 0.15);
+		const progress = Spicetify.Player.getProgress() / 1000;
+
+		const uNoiseOffset = (0.5 * progress + sampleAccumulatedIntegral(data.amplitudeCurve, progress)) * 75 * 0.01;
+		const uAmplitude = sampleAmplitudeMovingAverage(data.amplitudeCurve, progress, 0.15);
 		const uSeed = data.seed;
-		const uDotCount = 100;
+		const uDotCount = 322;
 		const uDotRadius = 0.9 / uDotCount;
 		const uDotRadiusPX = uDotRadius * 0.5 * state.viewportSize;
 		const uDotSpacing = 0.9 / (uDotCount - 1);
@@ -291,10 +297,10 @@ export default function Visualizer(props: {
 		const uSphereRadius = mapLinear(uAmplitude, 0, 1, 0.75 * 0.9, 0.9);
 		const uFeather = Math.pow(uAmplitude + 3, 2) * (45 / 1568);
 		const uNoiseFrequency = 4 / uDotCount;
-		const uNoiseAmplitude = 0.2 * 0.9;
+		const uNoiseAmplitude = 0.32 * 0.9;
 
 		gl.useProgram(state.particleShader);
-		gl.uniform1f(state.uScaledTimeLoc, uScaledTime);
+		gl.uniform1f(state.uNoiseOffsetLoc, uNoiseOffset);
 		gl.uniform1f(state.uAmplitudeLoc, uAmplitude);
 		gl.uniform1i(state.uSeedLoc, uSeed);
 		gl.uniform1i(state.uDotCountLoc, uDotCount);
