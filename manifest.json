@@ -1,6 +1,6 @@
 {
-    "name": "NCS Visualizer",
-    "description": "NCS-style visualizer for Spicetify",
+    "name": "Visualizer",
+    "description": "Audio Visualizer for Spicetify",
     "preview": "resources/screenshot.png",
     "readme": "README.md",
     "authors": [

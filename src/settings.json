@@ -1,6 +1,6 @@
 {
-	"displayName": "NCS Visualizer",
-	"nameId": "ncs-visualizer",
+	"displayName": { "en": "Visualizer", "en-GB": "Visualiser" },
+	"nameId": "visualizer",
 	"icon": "css/icon-inactive.svg",
 	"activeIcon": "css/icon-active.svg"
 }
