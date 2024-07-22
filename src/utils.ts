@@ -92,9 +92,8 @@ export function sampleAmplitudeMovingAverage(amplitudeCurve: CurveEntry[], posit
 export function sampleAccumulatedIntegral(amplitudeCurve: CurveEntry[], position: number) {
 	const index = findPointIndex(amplitudeCurve, position);
 	const p1 = amplitudeCurve[index];
-	
-	if(index + 1 >= amplitudeCurve.length)
-		return (p1.accumulatedIntegral ?? 0) + p1.y * (position - p1.x);
+
+	if (index + 1 >= amplitudeCurve.length) return (p1.accumulatedIntegral ?? 0) + p1.y * (position - p1.x);
 
 	const p2 = amplitudeCurve[index + 1];
 	const mid = {

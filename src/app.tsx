@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import styles from "./css/app.module.scss";
 import LoadingIcon from "./components/LoadingIcon";
-import Visualizer from "./components/Visualizer";
+import NCSVisualizer from "./components/renderer/NCSVisualizer";
 
 enum VisualizerState {
 	LOADING,
@@ -72,8 +72,8 @@ export default function App() {
 	}, []);
 
 	return (
-		<div className="ncs-visualizer-container">
-			<Visualizer
+		<div className="visualizer-container">
+			<NCSVisualizer
 				isEnabled={state == VisualizerState.RUNNING}
 				onError={onError}
 				audioAnalysis={trackData.audioAnalysis}

@@ -1,10 +1,10 @@
-:global(.ncs-visualizer-container) {
+:global(.visualizer-container) {
 	// fill available space
 	position: absolute;
 	inset: 0;
 }
 
-:global(.ncs-visualizer-container) > * {
+:global(.visualizer-container) > * {
 	position: absolute;
 
 	top: 50%;

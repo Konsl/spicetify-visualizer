@@ -1,9 +1,9 @@
 import React, { useCallback, useMemo } from "react";
-import AnimatedCanvas from "./AnimatedCanvas";
-import { sampleAmplitudeMovingAverage, decibelsToAmplitude, mapLinear, integrateLinearSegment, sampleAccumulatedIntegral } from "../utils";
-import { vertexShader as PARTICLE_VERT_SHADER, fragmentShader as PARTICLE_FRAG_SHADER } from "../shaders/particle";
-import { vertexShader as BLUR_VERT_SHADER, fragmentShader as BLUR_FRAG_SHADER } from "../shaders/blur";
-import { vertexShader as FINALIZE_VERT_SHADER, fragmentShader as FINALIZE_FRAG_SHADER } from "../shaders/finalize";
+import AnimatedCanvas from "../AnimatedCanvas";
+import { sampleAmplitudeMovingAverage, decibelsToAmplitude, mapLinear, integrateLinearSegment, sampleAccumulatedIntegral } from "../../utils";
+import { vertexShader as PARTICLE_VERT_SHADER, fragmentShader as PARTICLE_FRAG_SHADER } from "../../shaders/ncs-visualizer/particle";
+import { vertexShader as BLUR_VERT_SHADER, fragmentShader as BLUR_FRAG_SHADER } from "../../shaders/ncs-visualizer/blur";
+import { vertexShader as FINALIZE_VERT_SHADER, fragmentShader as FINALIZE_FRAG_SHADER } from "../../shaders/ncs-visualizer/finalize";
 
 type CanvasData = {
 	themeColor: Spicetify.Color;
@@ -57,7 +57,7 @@ type RendererState =
 			blurYTexture: WebGLTexture;
 	  };
 
-export default function Visualizer(props: {
+export default function NCSVisualizer(props: {
 	isEnabled: boolean;
 	onError: (msg: string) => void;
 	themeColor: Spicetify.Color;
@@ -73,7 +73,7 @@ export default function Visualizer(props: {
 				? [
 						{ x: segment.start, y: decibelsToAmplitude(segment.loudness_start) },
 						{ x: segment.start + segment.loudness_max_time, y: decibelsToAmplitude(segment.loudness_max) }
-				  ]
+					]
 				: [{ x: segment.start, y: decibelsToAmplitude(segment.loudness_start) }]
 		);
 
