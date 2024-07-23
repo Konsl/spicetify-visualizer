@@ -372,9 +372,15 @@ export default function NCSVisualizer(props: {
 		<AnimatedCanvas
 			isEnabled={props.isEnabled}
 			data={{ themeColor: props.themeColor, seed, amplitudeCurve }}
+			contextType="webgl2"
 			onInit={onInit}
 			onResize={onResize}
 			onRender={onRender}
+			style={{
+				width: "100%",
+				height: "100%",
+				objectFit: "contain"
+			}}
 		/>
 	);
 }

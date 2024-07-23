@@ -1,23 +1,34 @@
 import React, { useRef, useEffect, useState, useCallback } from "react";
 
-export default function AnimatedCanvas<T, U>(props: {
-	onInit: (ctx: WebGL2RenderingContext | null) => U;
-	onResize: (ctx: WebGL2RenderingContext | null, state: U) => void;
-	onRender: (ctx: WebGL2RenderingContext | null, data: T, state: U, time: number) => void;
+interface ContextTypeMap {
+	"2d": CanvasRenderingContext2D;
+	webgl: WebGLRenderingContext;
+	webgl2: WebGL2RenderingContext;
+	bitmaprenderer: ImageBitmapRenderingContext;
+}
+
+export default function AnimatedCanvas<T, U, V extends keyof ContextTypeMap>(props: {
+	contextType: V;
+	onInit: (ctx: ContextTypeMap[V] | null) => U;
+	onResize: (ctx: ContextTypeMap[V] | null, state: U) => void;
+	onRender: (ctx: ContextTypeMap[V] | null, data: T, state: U, time: number) => void;
+
+	style?: React.CSSProperties;
 
 	data: T;
 	isEnabled: boolean;
 }) {
-	const { onInit, onResize, onRender, data, isEnabled } = props;
+	const { contextType, onInit, onResize, onRender, style, data, isEnabled } = props;
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 	const [state, setState] = useState<U | null>(null);
 
 	const updateResolution = useCallback((canvas: HTMLCanvasElement) => {
-		const clientSize = Math.min(canvas.clientWidth, canvas.clientHeight);
-		const screenSize = Math.round(clientSize * window.devicePixelRatio);
+		const screenWidth = Math.round(canvas.clientWidth * window.devicePixelRatio);
+		const screenHeight = Math.round(canvas.clientHeight * window.devicePixelRatio);
 
-		if (canvas.width === screenSize && canvas.height === screenSize) return;
-		canvas.width = canvas.height = screenSize;
+		if (canvas.width === screenWidth && canvas.height === screenHeight) return;
+		canvas.width = screenWidth;
+		canvas.height = screenHeight;
 	}, []);
 
 	useEffect(() => {
@@ -26,7 +37,7 @@ export default function AnimatedCanvas<T, U>(props: {
 		const canvas = canvasRef.current;
 		if (!canvas) return;
 
-		const context = canvas.getContext("webgl2");
+		const context = canvas.getContext(contextType) as ContextTypeMap[V] | null;
 
 		const state = onInit(context);
 		updateResolution(canvas);
@@ -34,7 +45,7 @@ export default function AnimatedCanvas<T, U>(props: {
 		setState(state);
 
 		return () => setState(null);
-	}, [onInit]);
+	}, [contextType, onInit]);
 
 	useEffect(() => {
 		if (!isEnabled || !state || !onRender) return;
@@ -42,7 +53,7 @@ export default function AnimatedCanvas<T, U>(props: {
 		const canvas = canvasRef.current;
 		if (!canvas) return;
 
-		const context = canvas.getContext("webgl2");
+		const context = canvas.getContext(contextType) as ContextTypeMap[V] | null;
 
 		let requestId = 0;
 		const wrapper = (time: number) => {
@@ -56,7 +67,7 @@ export default function AnimatedCanvas<T, U>(props: {
 		return () => {
 			if (requestId) cancelAnimationFrame(requestId);
 		};
-	}, [onRender, data, state, isEnabled]);
+	}, [contextType, onRender, data, state, isEnabled]);
 
 	useEffect(() => {
 		if (!canvasRef.current) return;
@@ -67,21 +78,19 @@ export default function AnimatedCanvas<T, U>(props: {
 
 			updateResolution(canvas);
 
-			const context = canvas.getContext("webgl2");
+			const context = canvas.getContext(contextType) as ContextTypeMap[V] | null;
 			if (context && state) onResize(context, state);
 		});
 
 		resizeObserver.observe(canvasRef.current);
 		return () => resizeObserver.disconnect();
-	}, [onResize, state]);
+	}, [contextType, onResize, state]);
 
 	return (
 		<canvas
 			ref={canvasRef}
 			style={{
-				width: "100%",
-				height: "100%",
-				objectFit: "contain",
+				...(style || {}),
 				...(isEnabled ? {} : { visibility: "hidden" })
 			}}
 		/>
