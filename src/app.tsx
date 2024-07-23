@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import styles from "./css/app.module.scss";
 import LoadingIcon from "./components/LoadingIcon";
 import NCSVisualizer from "./components/renderer/NCSVisualizer";
+import SpectrumVisualizer from "./components/renderer/SpectrumVisualizer";
 
 enum VisualizerState {
 	LOADING,
@@ -42,6 +43,8 @@ export default function App() {
 				Spicetify.extractColorPreset(item.metadata.image_url).then(colors => colors[0].colorLight)
 			]);
 
+			console.log("[Visualizer] Audio Analysis:", audioAnalysis);
+
 			if (!audioAnalysis) {
 				setState(VisualizerState.ERROR_NO_NETWORK);
 				return;
@@ -73,7 +76,7 @@ export default function App() {
 
 	return (
 		<div className="visualizer-container">
-			<NCSVisualizer
+			<SpectrumVisualizer
 				isEnabled={state == VisualizerState.RUNNING}
 				onError={onError}
 				audioAnalysis={trackData.audioAnalysis}
