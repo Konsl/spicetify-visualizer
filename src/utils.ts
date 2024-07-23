@@ -1,10 +1,10 @@
-export function binarySearchIndex<T>(array: T[], converter: (value: T) => number, position: number): number {
+export function binarySearchIndex<T>(array: T[], converter: (value: T, index: number) => number, position: number): number {
 	let lowerBound = 0;
 	let upperBound = array.length;
 
 	while (upperBound - lowerBound > 1) {
 		const testIndex = Math.floor((upperBound + lowerBound) / 2);
-		const pointPos = converter(array[testIndex]);
+		const pointPos = converter(array[testIndex], testIndex);
 
 		if (pointPos <= position) lowerBound = testIndex;
 		else upperBound = testIndex;
@@ -28,27 +28,41 @@ export function mapLinear(value: number, iMin: number, iMax: number, oMin: numbe
 	return value;
 }
 
+export function map(value: number, iMin: number, iMax: number, interpolate: (x: number) => number, oMin: number, oMax: number): number {
+	value = (value - iMin) / (iMax - iMin);
+	value = interpolate(value);
+	value = value * (oMax - oMin) + oMin;
+	return value;
+}
+
 // calculate the integral of the linear function through p1 and p2 between p1.x and p2.x
 export function integrateLinearSegment(p1: CurveEntry, p2: CurveEntry): number {
 	return -0.5 * (p1.x - p2.x) * (p1.y + p2.y);
 }
 
-export function sampleSegmentedFunctionLinear<T>(array: T[], getX: (value: T) => number, getY: (value: T) => number, position: number): number {
+export function sampleSegmentedFunction<T>(
+	array: T[],
+	getX: (value: T, index: number) => number,
+	getY: (value: T, index: number) => number,
+	interpolate: (x: number) => number,
+	position: number
+): number {
 	const pointIndex = binarySearchIndex(array, getX, position);
 	const point = array[pointIndex];
 
-	if (pointIndex > array.length - 2) return getY(point);
+	if (pointIndex > array.length - 2) return getY(point, pointIndex);
 	const nextPoint = array[pointIndex + 1];
 
-	return mapLinear(position, getX(point), getX(nextPoint), getY(point), getY(nextPoint));
+	return map(position, getX(point, pointIndex), getX(nextPoint, pointIndex + 1), interpolate, getY(point, pointIndex), getY(nextPoint, pointIndex + 1));
 }
 
 export function sampleAmplitudeMovingAverage(amplitudeCurve: CurveEntry[], position: number, windowSize: number): number {
 	if (windowSize == 0)
-		return sampleSegmentedFunctionLinear(
+		return sampleSegmentedFunction(
 			amplitudeCurve,
 			e => e.x,
 			e => e.y,
+			x => x,
 			position
 		);
 
