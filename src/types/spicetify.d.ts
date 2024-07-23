@@ -1371,7 +1371,9 @@ declare namespace Spicetify {
 			 * or a function. If a function is passed it will be called with
 			 * (`isOpen`, `handleContextMenu`, `ref`) as arguments.
 			 */
-			children: Element | ((isOpen?: boolean, handleContextMenu?: (e: MouseEvent) => void, ref?: (e: Element) => void) => Element);
+			children:
+				| Element
+				| ((isOpen?: boolean, handleContextMenu?: (e: MouseEvent) => void, ref?: (e: Element) => void) => Element);
 		};
 		type MenuProps = {
 			/**
@@ -2167,7 +2169,11 @@ declare namespace Spicetify {
 		 * @param context Context to use
 		 * @return Promise that resolves to the response
 		 */
-		function Request(query: (typeof Definitions)[Query | string], variables?: Record<string, any>, context?: Record<string, any>): Promise<any>;
+		function Request(
+			query: (typeof Definitions)[Query | string],
+			variables?: Record<string, any>,
+			context?: Record<string, any>
+		): Promise<any>;
 		/**
 		 * Context for GraphQL queries.
 		 * @description Used to set context for the handler and initialze it.
@@ -2180,7 +2186,11 @@ declare namespace Spicetify {
 		 */
 		function Handler(
 			context: Record<string, any>
-		): (query: (typeof Definitions)[Query | string], variables?: Record<string, any>, context?: Record<string, any>) => Promise<any>;
+		): (
+			query: (typeof Definitions)[Query | string],
+			variables?: Record<string, any>,
+			context?: Record<string, any>
+		) => Promise<any>;
 	}
 
 	namespace ReactHook {
@@ -2224,7 +2234,11 @@ declare namespace Spicetify {
 		 *
 		 * @return Extracted color hex code.
 		 */
-		function useExtractedColor(uri: string, fallbackColor?: string, variant?: "colorRaw" | "colorLight" | "colorDark"): string;
+		function useExtractedColor(
+			uri: string,
+			fallbackColor?: string,
+			variant?: "colorRaw" | "colorLight" | "colorDark"
+		): string;
 	}
 
 	/**

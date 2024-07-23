@@ -1,7 +1,7 @@
 import React, { useCallback, useMemo } from "react";
 import AnimatedCanvas from "../AnimatedCanvas";
 import { decibelsToAmplitude, binarySearchIndex, sampleSegmentedFunction, smoothstep, mapLinear } from "../../utils";
-import { parseRhythmString, RhythmString } from "../../RhythmString";
+import { parseRhythmString } from "../../RhythmString";
 
 type CanvasData = {
 	themeColor: Spicetify.Color;
@@ -171,7 +171,12 @@ export default function SpectrumVisualizer(props: {
 				x => x,
 				progress
 			);
-			ctx.fillRect(spaceWidth * (i + 1) + barWidth * i, ctx.canvas.height - value * ctx.canvas.height, barWidth, value * ctx.canvas.height);
+			ctx.fillRect(
+				spaceWidth * (i + 1) + barWidth * i,
+				ctx.canvas.height - value * ctx.canvas.height,
+				barWidth,
+				value * ctx.canvas.height
+			);
 		}
 	}, []);
 

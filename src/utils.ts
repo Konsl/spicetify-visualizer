@@ -28,7 +28,14 @@ export function mapLinear(value: number, iMin: number, iMax: number, oMin: numbe
 	return value;
 }
 
-export function map(value: number, iMin: number, iMax: number, interpolate: (x: number) => number, oMin: number, oMax: number): number {
+export function map(
+	value: number,
+	iMin: number,
+	iMax: number,
+	interpolate: (x: number) => number,
+	oMin: number,
+	oMax: number
+): number {
 	value = (value - iMin) / (iMax - iMin);
 	value = interpolate(value);
 	value = value * (oMax - oMin) + oMin;
@@ -53,7 +60,14 @@ export function sampleSegmentedFunction<T>(
 	if (pointIndex > array.length - 2) return getY(point, pointIndex);
 	const nextPoint = array[pointIndex + 1];
 
-	return map(position, getX(point, pointIndex), getX(nextPoint, pointIndex + 1), interpolate, getY(point, pointIndex), getY(nextPoint, pointIndex + 1));
+	return map(
+		position,
+		getX(point, pointIndex),
+		getX(nextPoint, pointIndex + 1),
+		interpolate,
+		getY(point, pointIndex),
+		getY(nextPoint, pointIndex + 1)
+	);
 }
 
 export function sampleAmplitudeMovingAverage(amplitudeCurve: CurveEntry[], position: number, windowSize: number): number {

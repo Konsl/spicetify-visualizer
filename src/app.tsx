@@ -94,7 +94,9 @@ export default function App() {
 			) : state == VisualizerState.ERROR_NOT_PLAYING ? (
 				<div className={styles.unavailable_message}>{"Start playing a song to see the visualization!"}</div>
 			) : state == VisualizerState.ERROR_UNSUPPORTED_TRACK_TYPE ? (
-				<div className={styles.unavailable_message}>{"Error: The type of track you're listening to is currently not supported"}</div>
+				<div className={styles.unavailable_message}>
+					{"Error: The type of track you're listening to is currently not supported"}
+				</div>
 			) : state == VisualizerState.ERROR_NO_NETWORK ? (
 				<div className={styles.unavailable_message}>
 					{"Error: The audio analysis could not be loaded, please check your internet connection"}

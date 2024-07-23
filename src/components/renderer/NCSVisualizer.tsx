@@ -1,9 +1,21 @@
 import React, { useCallback, useMemo } from "react";
 import AnimatedCanvas from "../AnimatedCanvas";
-import { sampleAmplitudeMovingAverage, decibelsToAmplitude, mapLinear, integrateLinearSegment, sampleAccumulatedIntegral } from "../../utils";
-import { vertexShader as PARTICLE_VERT_SHADER, fragmentShader as PARTICLE_FRAG_SHADER } from "../../shaders/ncs-visualizer/particle";
+import {
+	sampleAmplitudeMovingAverage,
+	decibelsToAmplitude,
+	mapLinear,
+	integrateLinearSegment,
+	sampleAccumulatedIntegral
+} from "../../utils";
+import {
+	vertexShader as PARTICLE_VERT_SHADER,
+	fragmentShader as PARTICLE_FRAG_SHADER
+} from "../../shaders/ncs-visualizer/particle";
 import { vertexShader as BLUR_VERT_SHADER, fragmentShader as BLUR_FRAG_SHADER } from "../../shaders/ncs-visualizer/blur";
-import { vertexShader as FINALIZE_VERT_SHADER, fragmentShader as FINALIZE_FRAG_SHADER } from "../../shaders/ncs-visualizer/finalize";
+import {
+	vertexShader as FINALIZE_VERT_SHADER,
+	fragmentShader as FINALIZE_FRAG_SHADER
+} from "../../shaders/ncs-visualizer/finalize";
 
 type CanvasData = {
 	themeColor: Spicetify.Color;
@@ -353,7 +365,12 @@ export default function NCSVisualizer(props: {
 
 		// combine blurred and original
 		gl.useProgram(state.finalizeShader);
-		gl.uniform3f(state.uOutputColorLoc, data.themeColor.rgb.r / 255, data.themeColor.rgb.g / 255, data.themeColor.rgb.b / 255);
+		gl.uniform3f(
+			state.uOutputColorLoc,
+			data.themeColor.rgb.r / 255,
+			data.themeColor.rgb.g / 255,
+			data.themeColor.rgb.b / 255
+		);
 		gl.uniform1i(state.uBlurredTextureLoc, 0);
 		gl.uniform1i(state.uOriginalTextureLoc, 1);
 
