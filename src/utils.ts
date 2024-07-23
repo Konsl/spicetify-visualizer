@@ -33,18 +33,24 @@ export function integrateLinearSegment(p1: CurveEntry, p2: CurveEntry): number {
 	return -0.5 * (p1.x - p2.x) * (p1.y + p2.y);
 }
 
-export function sampleAmplitudeLinear(amplitudeCurve: CurveEntry[], position: number): number {
-	const pointIndex = binarySearchIndex(amplitudeCurve, e => e.x, position);
-	const point = amplitudeCurve[pointIndex];
+export function sampleSegmentedFunctionLinear<T>(array: T[], getX: (value: T) => number, getY: (value: T) => number, position: number): number {
+	const pointIndex = binarySearchIndex(array, getX, position);
+	const point = array[pointIndex];
 
-	if (pointIndex > amplitudeCurve.length - 2) return point.y;
-	const nextPoint = amplitudeCurve[pointIndex + 1];
+	if (pointIndex > array.length - 2) return getY(point);
+	const nextPoint = array[pointIndex + 1];
 
-	return mapLinear(position, point.x, nextPoint.x, point.y, nextPoint.y);
+	return mapLinear(position, getX(point), getX(nextPoint), getY(point), getY(nextPoint));
 }
 
 export function sampleAmplitudeMovingAverage(amplitudeCurve: CurveEntry[], position: number, windowSize: number): number {
-	if (windowSize == 0) return sampleAmplitudeLinear(amplitudeCurve, position);
+	if (windowSize == 0)
+		return sampleSegmentedFunctionLinear(
+			amplitudeCurve,
+			e => e.x,
+			e => e.y,
+			position
+		);
 
 	const windowStart = position - windowSize / 2;
 	const windowEnd = position + windowSize / 2;
