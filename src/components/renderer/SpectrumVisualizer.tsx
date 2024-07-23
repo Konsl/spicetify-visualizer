@@ -1,12 +1,11 @@
 import React, { useCallback, useMemo } from "react";
 import AnimatedCanvas from "../AnimatedCanvas";
-import { decibelsToAmplitude, binarySearchIndex } from "../../utils";
+import { decibelsToAmplitude, binarySearchIndex, sampleSegmentedFunction, smoothstep, mapLinear } from "../../utils";
 import { parseRhythmString, RhythmString } from "../../RhythmString";
 
 type CanvasData = {
 	themeColor: Spicetify.Color;
-	segments: SpotifyAudioAnalysis.Segment[];
-	rhythmString: RhythmString;
+	spectrumData: { x: number; y: number }[][];
 };
 
 type RendererState =
@@ -23,10 +22,119 @@ export default function SpectrumVisualizer(props: {
 	themeColor: Spicetify.Color;
 	audioAnalysis?: SpotifyAudioAnalysis;
 }) {
-	const segments = props.audioAnalysis?.segments ?? [];
-	const rhythmString = useMemo(() => {
-		if (!props.audioAnalysis || props.audioAnalysis.track.rhythm_version !== 1) return [];
-		return parseRhythmString(props.audioAnalysis.track.rhythmstring);
+	const spectrumData = useMemo(() => {
+		if (!props.audioAnalysis) return [];
+
+		if (props.audioAnalysis.track.rhythm_version !== 1) {
+			props.onError(`Error: Unsupported rhythmstring version ${props.audioAnalysis.track.rhythm_version}`);
+			return [];
+		}
+
+		const segments = props.audioAnalysis.segments;
+		const rhythm = parseRhythmString(props.audioAnalysis.track.rhythmstring);
+
+		if (segments.length === 0 || rhythm.length === 0) return [];
+
+		const RHYTHM_WEIGHT = 0.4;
+		const RHYTHM_OFFSET = 0.2;
+		const FALLOFF_SPEED = 0.4;
+
+		const rhythmWindowSize = (RHYTHM_WEIGHT / Math.sqrt(2)) * 8;
+
+		const channelCount = 12 * rhythm.length;
+		const channelSegments: number[][] = [];
+
+		for (let i = 0; i < segments.length; i++) {
+			const segment = segments[i];
+			const amplitudeStart = decibelsToAmplitude(segment.loudness_start);
+			const amplitudeMax = decibelsToAmplitude(segment.loudness_max);
+			const peakPosition = segment.start + segment.loudness_max_time;
+			const pitches = segment.pitches;
+
+			const rhythmWindowStart = peakPosition - rhythmWindowSize;
+			const rhythmWindowEnd = peakPosition + rhythmWindowSize;
+			const frequencies = rhythm.map(channel => {
+				const start = binarySearchIndex(channel, e => e, rhythmWindowStart);
+				const end = binarySearchIndex(channel, e => e, rhythmWindowEnd);
+
+				return (
+					channel
+						.slice(start, end)
+						.map(e => Math.exp(-Math.pow((e - peakPosition) / RHYTHM_WEIGHT, 2)))
+						.reduce((a, b) => a + b, 0) + RHYTHM_OFFSET
+				);
+			});
+
+			const frequenciesMax = Math.max(...frequencies);
+			for (let i = 0; i < frequencies.length; i++) frequencies[i] /= frequenciesMax;
+
+			const channels: number[] = Array(channelCount);
+			for (let j = 0; j < frequencies.length; j++) {
+				const pitchVariation = mapLinear(j, 0, frequencies.length - 1, 0.2, 0.6);
+
+				for (let k = 0; k < 12; k++) {
+					const frequency = sampleSegmentedFunction(
+						[...frequencies.entries()],
+						e => e[0],
+						e => e[1],
+						smoothstep,
+						j + k / 12
+					);
+					const pitchAvg = pitches.reduce((a, b) => a + b, 0) / pitches.length;
+					const pitch = pitches[k] * pitchVariation + pitchAvg * (1 - pitchVariation);
+					channels[12 * j + k] = frequency * pitch;
+				}
+			}
+
+			channelSegments.push([segment.start, ...channels.map(c => c * amplitudeStart)]);
+			channelSegments.push([peakPosition, ...channels.map(c => c * amplitudeMax)]);
+
+			if (i == segments.length - 1) {
+				const amplitudeEnd = decibelsToAmplitude(segment.loudness_end);
+				channelSegments.push([segment.start + segment.duration, ...channels.map(c => c * amplitudeEnd)]);
+			}
+		}
+
+		const spectrumData: { x: number; y: number }[][] = Array(channelCount)
+			.fill(0)
+			.map(_ => Array(channelSegments.length));
+		for (let i = 0; i < channelCount; i++) {
+			let channelIndex = 0;
+			let prevSegment = { x: 0, y: 0 };
+			let prevPeak = { x: 0, y: 0 };
+
+			for (let j = 0; j < channelSegments.length; j++) {
+				const currentSegment = { x: channelSegments[j][0], y: channelSegments[j][i + 1] };
+				const currentEnd = currentSegment.x + currentSegment.y / FALLOFF_SPEED;
+				const prevPeakEnd = prevPeak.x + prevPeak.y / FALLOFF_SPEED;
+
+				if (currentEnd > prevPeakEnd) {
+					if (prevPeak.x !== prevSegment.x) {
+						const m1 = (currentSegment.y - prevSegment.y) / (currentSegment.x - prevSegment.x);
+						const b1 = prevSegment.y - m1 * prevSegment.x;
+						const m2 = -FALLOFF_SPEED;
+						const b2 = prevPeak.y - m2 * prevPeak.x;
+
+						const cx = (b2 - b1) / (m1 - m2);
+						const cy = m1 * cx + b1;
+
+						spectrumData[i][channelIndex] = { x: cx, y: cy };
+						channelIndex++;
+					}
+
+					prevPeak = currentSegment;
+
+					spectrumData[i][channelIndex] = currentSegment;
+					channelIndex++;
+				}
+
+				prevSegment = currentSegment;
+			}
+
+			spectrumData[i].length = channelIndex;
+		}
+
+		return spectrumData;
 	}, [props.audioAnalysis]);
 
 	const onInit = useCallback((ctx: CanvasRenderingContext2D | null): RendererState => {
@@ -48,127 +156,29 @@ export default function SpectrumVisualizer(props: {
 		if (state.isError || !ctx) return;
 
 		const progress = Spicetify.Player.getProgress() / 1000;
-		const falloff = 0.7;
-        const maxFalloffDistance = 1 / falloff;
-
 		ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 		ctx.fillStyle = data.themeColor.toCSS(Spicetify.Color.CSSFormat.HEX);
 
-		const windowSize = 2;
-		const windowStart = progress - windowSize / 2;
-		const windowEnd = progress + windowSize / 2;
-		const windowStartIndex = binarySearchIndex(data.segments, e => e.start, windowStart - maxFalloffDistance);
-		const windowEndIndex = binarySearchIndex(data.segments, e => e.start, windowEnd);
-
-		const timeToScreen = (time: number) => ((time - windowStart) / windowSize) * ctx.canvas.width;
-
-		ctx.strokeStyle = "#ffffff7f";
-		ctx.lineWidth = 2;
-		for (let i = windowStartIndex; i <= windowEndIndex; i++) {
-			const segment = data.segments[i];
-
-			ctx.beginPath();
-			ctx.moveTo(timeToScreen(segment.start), ctx.canvas.height);
-			ctx.lineTo(timeToScreen(segment.start), 0);
-			ctx.stroke();
-		}
-
-		const rhythmStringScale = 0.1;
-		const rhythmStringWindow = rhythmStringScale / Math.sqrt(2) * 4;
-		const rhythmStringWindowStart = progress - rhythmStringWindow;
-		const rhythmStringWindowEnd = progress + rhythmStringWindow;
-
-		for (let i = 0; i < data.rhythmString.length; i++) {
-			const channel = data.rhythmString[i];
-			const channelWindowStartIndex = binarySearchIndex(channel, e => e, rhythmStringWindowStart);
-			const channelWindowEndIndex = binarySearchIndex(channel, e => e, rhythmStringWindowEnd);
-
-			for (let j = channelWindowStartIndex; j <= channelWindowEndIndex; j++) {
-				const position = channel[j];
-				const importance = Math.exp(-Math.pow((position - progress) / rhythmStringScale, 2));
-				const centerX = timeToScreen(position);
-				const centerY = ctx.canvas.height * (1 - (i + 0.5) / data.rhythmString.length);
-
-				ctx.fillStyle = data.themeColor.toCSS(Spicetify.Color.CSSFormat.HEX) + Math.round(importance * 255).toString(16).padStart(2, "0");
-				ctx.fillRect(centerX - 4, centerY - 4, 8, 8);
-			}
-		}
-
-		for (let x = rhythmStringWindowStart; x <= rhythmStringWindowEnd; x += 0.01) {
-			const importance = Math.exp(-Math.pow((x - progress) / rhythmStringScale, 2));
-			const centerX = timeToScreen(x);
-
-			ctx.fillStyle = data.themeColor.toCSS(Spicetify.Color.CSSFormat.HEX) + Math.round(importance * 255).toString(16).padStart(2, "0");
-			ctx.fillRect(centerX - 4, ctx.canvas.height - 8, 8, 8);
-		}
-
-		ctx.strokeStyle = data.themeColor.toCSS(Spicetify.Color.CSSFormat.HEX) + "7f";
-		ctx.lineWidth = 2;
-		for (let i = windowStartIndex; i <= windowEndIndex; i++) {
-			const segment = data.segments[i];
-			const isLast = i + 1 >= data.segments.length;
-
-			const points = [
-				[segment.start, decibelsToAmplitude(segment.loudness_start)],
-				[segment.start + segment.loudness_max_time, decibelsToAmplitude(segment.loudness_max)]
-			];
-			if (isLast) points.push([segment.start + segment.duration, decibelsToAmplitude(segment.loudness_end)]);
-
-			ctx.beginPath();
-
-			for (let j = 0; j < points.length; j++) {
-				const falloffEnd = points[j][0] + points[j][1] / falloff;
-
-				ctx.moveTo(timeToScreen(points[j][0]), ctx.canvas.height * 0.5 * (1 - points[j][1]));
-				ctx.lineTo(timeToScreen(falloffEnd), ctx.canvas.height * 0.5);
-				ctx.lineTo(timeToScreen(points[j][0]), ctx.canvas.height * 0.5 * (1 + points[j][1]));
-			}
-
-			ctx.stroke();
-		}
-
-		ctx.strokeStyle = data.themeColor.toCSS(Spicetify.Color.CSSFormat.HEX);
-		ctx.lineWidth = 2;
-		for (let i = windowStartIndex; i <= windowEndIndex; i++) {
-			const segment = data.segments[i];
-			const nextSegment = data.segments.length > i + 1 ? data.segments[i + 1] : null;
-
-			const amplitudeStart = decibelsToAmplitude(segment.loudness_start);
-			const amplitudeMax = decibelsToAmplitude(segment.loudness_max);
-			const amplitudeEnd = decibelsToAmplitude(nextSegment?.loudness_start ?? segment.loudness_end);
-
-			ctx.beginPath();
-			ctx.moveTo(timeToScreen(segment.start), ctx.canvas.height * 0.5 * (1 - amplitudeStart));
-			ctx.lineTo(timeToScreen(segment.start + segment.loudness_max_time), ctx.canvas.height * 0.5 * (1 - amplitudeMax));
-			ctx.lineTo(timeToScreen(segment.start + segment.duration), ctx.canvas.height * 0.5 * (1 - amplitudeEnd));
-			ctx.moveTo(timeToScreen(segment.start), ctx.canvas.height * 0.5 * (1 + amplitudeStart));
-			ctx.lineTo(timeToScreen(segment.start + segment.loudness_max_time), ctx.canvas.height * 0.5 * (1 + amplitudeMax));
-			ctx.lineTo(timeToScreen(segment.start + segment.duration), ctx.canvas.height * 0.5 * (1 + amplitudeEnd));
-			ctx.stroke();
-		}
-
-		ctx.strokeStyle = "#ffffff";
-		ctx.lineWidth = 4;
-		ctx.beginPath();
-		ctx.moveTo(timeToScreen(progress), ctx.canvas.height);
-		ctx.lineTo(timeToScreen(progress), 0);
-		ctx.stroke();
-
-		/* const barCount = 96;
+		const barCount = data.spectrumData.length;
 		const barWidth = (ctx.canvas.width / barCount) * 0.7;
 		const spaceWidth = (ctx.canvas.width - barWidth * barCount) / (barCount + 1);
 
 		for (let i = 0; i < barCount; i++) {
-			const value = Math.random();
-
+			const value = sampleSegmentedFunction(
+				data.spectrumData[i],
+				x => x.x,
+				x => x.y,
+				x => x,
+				progress
+			);
 			ctx.fillRect(spaceWidth * (i + 1) + barWidth * i, ctx.canvas.height - value * ctx.canvas.height, barWidth, value * ctx.canvas.height);
-		} */
+		}
 	}, []);
 
 	return (
 		<AnimatedCanvas
 			isEnabled={props.isEnabled}
-			data={{ themeColor: props.themeColor, segments, rhythmString }}
+			data={{ themeColor: props.themeColor, spectrumData }}
 			contextType="2d"
 			onInit={onInit}
 			onResize={onResize}
