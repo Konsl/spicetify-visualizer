@@ -1,10 +1,10 @@
-export function findPointIndex(amplitudeCurve: CurveEntry[], position: number): number {
+export function binarySearchIndex<T>(array: T[], converter: (value: T) => number, position: number): number {
 	let lowerBound = 0;
-	let upperBound = amplitudeCurve.length;
+	let upperBound = array.length;
 
 	while (upperBound - lowerBound > 1) {
 		const testIndex = Math.floor((upperBound + lowerBound) / 2);
-		const pointPos = amplitudeCurve[testIndex].x;
+		const pointPos = converter(array[testIndex]);
 
 		if (pointPos <= position) lowerBound = testIndex;
 		else upperBound = testIndex;
@@ -33,8 +33,8 @@ export function integrateLinearSegment(p1: CurveEntry, p2: CurveEntry): number {
 	return -0.5 * (p1.x - p2.x) * (p1.y + p2.y);
 }
 
-export function calculateAmplitude(amplitudeCurve: CurveEntry[], position: number): number {
-	const pointIndex = findPointIndex(amplitudeCurve, position);
+export function sampleAmplitudeLinear(amplitudeCurve: CurveEntry[], position: number): number {
+	const pointIndex = binarySearchIndex(amplitudeCurve, e => e.x, position);
 	const point = amplitudeCurve[pointIndex];
 
 	if (pointIndex > amplitudeCurve.length - 2) return point.y;
@@ -44,12 +44,12 @@ export function calculateAmplitude(amplitudeCurve: CurveEntry[], position: numbe
 }
 
 export function sampleAmplitudeMovingAverage(amplitudeCurve: CurveEntry[], position: number, windowSize: number): number {
-	if (windowSize == 0) return calculateAmplitude(amplitudeCurve, position);
+	if (windowSize == 0) return sampleAmplitudeLinear(amplitudeCurve, position);
 
 	const windowStart = position - windowSize / 2;
 	const windowEnd = position + windowSize / 2;
-	const windowStartIndex = findPointIndex(amplitudeCurve, windowStart);
-	const windowEndIndex = findPointIndex(amplitudeCurve, windowEnd);
+	const windowStartIndex = binarySearchIndex(amplitudeCurve, e => e.x, windowStart);
+	const windowEndIndex = binarySearchIndex(amplitudeCurve, e => e.x, windowEnd);
 
 	let integral = 0;
 	if (windowStartIndex == windowEndIndex) {
@@ -90,7 +90,7 @@ export function sampleAmplitudeMovingAverage(amplitudeCurve: CurveEntry[], posit
 }
 
 export function sampleAccumulatedIntegral(amplitudeCurve: CurveEntry[], position: number) {
-	const index = findPointIndex(amplitudeCurve, position);
+	const index = binarySearchIndex(amplitudeCurve, e => e.x, position);
 	const p1 = amplitudeCurve[index];
 
 	if (index + 1 >= amplitudeCurve.length) return (p1.accumulatedIntegral ?? 0) + p1.y * (position - p1.x);
