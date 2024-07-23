@@ -381,6 +381,10 @@ export default function NCSVisualizer(props: {
 				height: "100%",
 				objectFit: "contain"
 			}}
+			sizeConstraint={(width, height) => {
+				const size = Math.min(width, height);
+				return { width: size, height: size };
+			}}
 		/>
 	);
 }

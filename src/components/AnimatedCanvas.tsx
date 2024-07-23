@@ -14,6 +14,7 @@ export default function AnimatedCanvas<T, U, V extends keyof ContextTypeMap>(pro
 	onRender: (ctx: ContextTypeMap[V] | null, data: T, state: U, time: number) => void;
 
 	style?: React.CSSProperties;
+	sizeConstraint?: (width: number, height: number) => { width: number; height: number };
 
 	data: T;
 	isEnabled: boolean;
@@ -26,9 +27,14 @@ export default function AnimatedCanvas<T, U, V extends keyof ContextTypeMap>(pro
 		const screenWidth = Math.round(canvas.clientWidth * window.devicePixelRatio);
 		const screenHeight = Math.round(canvas.clientHeight * window.devicePixelRatio);
 
-		if (canvas.width === screenWidth && canvas.height === screenHeight) return;
-		canvas.width = screenWidth;
-		canvas.height = screenHeight;
+		const { width: newWidth, height: newHeight } = props.sizeConstraint?.(screenWidth, screenHeight) ?? {
+			width: screenWidth,
+			height: screenHeight
+		};
+
+		if (canvas.width === newWidth && canvas.height === newHeight) return;
+		canvas.width = newWidth;
+		canvas.height = newHeight;
 	}, []);
 
 	useEffect(() => {

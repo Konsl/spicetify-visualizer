@@ -82,6 +82,12 @@ export default function App() {
 				audioAnalysis={trackData.audioAnalysis}
 				themeColor={trackData.themeColor}
 			/>
+			<NCSVisualizer
+				isEnabled={state == VisualizerState.RUNNING}
+				onError={onError}
+				audioAnalysis={trackData.audioAnalysis}
+				themeColor={trackData.themeColor}
+			/>
 
 			{state == VisualizerState.LOADING ? (
 				<LoadingIcon />
