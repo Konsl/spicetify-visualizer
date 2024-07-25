@@ -39,7 +39,7 @@ export default function App() {
 
 			const analysisRequestUrl = `https://spclient.wg.spotify.com/audio-attributes/v1/audio-analysis/${uri.id}?format=json`;
 			const [audioAnalysis, vibrantColor] = await Promise.all([
-				Spicetify.CosmosAsync.get(analysisRequestUrl).catch(console.error) as Promise<SpotifyAudioAnalysis | undefined>,
+				Spicetify.CosmosAsync.get(analysisRequestUrl).catch(console.error) as Promise<unknown>,
 				Spicetify.extractColorPreset(item.metadata.image_url).then(colors => colors[0].colorLight)
 			]);
 
@@ -50,12 +50,31 @@ export default function App() {
 				return;
 			}
 
-			if (audioAnalysis.error) {
-				onError(`Error ${audioAnalysis.error.status}: ${audioAnalysis.error.message}`);
+			if (typeof audioAnalysis !== "object") {
+				onError(`Invalid audio analysis data (${audioAnalysis})`);
 				return;
 			}
 
-			setTrackData({ audioAnalysis, themeColor: vibrantColor });
+			if (!("track" in audioAnalysis) || !("segments" in audioAnalysis)) {
+				const message =
+					"message" in audioAnalysis
+						? (audioAnalysis.message as string)
+						: "error" in audioAnalysis
+							? (audioAnalysis.error as string)
+							: "Unknown error";
+
+				const code = "code" in audioAnalysis ? (audioAnalysis.code as number) : null;
+
+				if (code !== null) {
+					onError(`Error ${code}: ${message}`);
+					return;
+				} else {
+					onError(message);
+					return;
+				}
+			}
+
+			setTrackData({ audioAnalysis: audioAnalysis as SpotifyAudioAnalysis, themeColor: vibrantColor });
 			setState(VisualizerState.RUNNING);
 		};
 
