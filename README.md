@@ -5,6 +5,11 @@ formerly NCS Visualizer
 
 ---
 
+For help with installing/uninstalling, check out the [Spicetify FAQ](https://spicetify.app/docs/faq) or ask on the [Spicetify Discord](https://discord.gg/VnevqPp2Rr).
+If you're experiencing any issues specific to this extension, take a look at the [Issues](https://github.com/Konsl/spicetify-visualizer/issues) tab or open a ticket on [Discord](https://discord.gg/appzM48wXG).
+
+---
+
 ![preview](resources/screenshot.png)
 
 ### Installation
