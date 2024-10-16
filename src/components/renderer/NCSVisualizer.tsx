@@ -11,6 +11,7 @@ import {
 	vertexShader as PARTICLE_VERT_SHADER,
 	fragmentShader as PARTICLE_FRAG_SHADER
 } from "../../shaders/ncs-visualizer/particle";
+import { vertexShader as DOT_VERT_SHADER, fragmentShader as DOT_FRAG_SHADER } from "../../shaders/ncs-visualizer/dot";
 import { vertexShader as BLUR_VERT_SHADER, fragmentShader as BLUR_FRAG_SHADER } from "../../shaders/ncs-visualizer/blur";
 import {
 	vertexShader as FINALIZE_VERT_SHADER,
@@ -30,26 +31,31 @@ type RendererState =
 	| {
 			isError: false;
 			particleShader: WebGLProgram;
+			dotShader: WebGLProgram;
 			blurShader: WebGLProgram;
 			finalizeShader: WebGLProgram;
 			viewportSize: number;
+			particleTextureSize: number;
 
 			inPositionLoc: number;
+			inPositionLocDot: number;
 			inPositionLocBlur: number;
 			inPositionLocFinalize: number;
 
 			uNoiseOffsetLoc: WebGLUniformLocation;
 			uAmplitudeLoc: WebGLUniformLocation;
 			uSeedLoc: WebGLUniformLocation;
-			uDotCountLoc: WebGLUniformLocation;
-			uDotRadiusLoc: WebGLUniformLocation;
-			uDotRadiusPXLoc: WebGLUniformLocation;
 			uDotSpacingLoc: WebGLUniformLocation;
 			uDotOffsetLoc: WebGLUniformLocation;
 			uSphereRadiusLoc: WebGLUniformLocation;
 			uFeatherLoc: WebGLUniformLocation;
 			uNoiseFrequencyLoc: WebGLUniformLocation;
 			uNoiseAmplitudeLoc: WebGLUniformLocation;
+
+			uDotCountLoc: WebGLUniformLocation;
+			uDotRadiusLoc: WebGLUniformLocation;
+			uDotRadiusPXLoc: WebGLUniformLocation;
+			uParticleTextureLoc: WebGLUniformLocation;
 
 			uBlurRadiusLoc: WebGLUniformLocation;
 			uBlurDirectionLoc: WebGLUniformLocation;
@@ -63,6 +69,8 @@ type RendererState =
 
 			particleFramebuffer: WebGLFramebuffer;
 			particleTexture: WebGLTexture;
+			dotFramebuffer: WebGLFramebuffer;
+			dotTexture: WebGLTexture;
 			blurXFramebuffer: WebGLFramebuffer;
 			blurXTexture: WebGLTexture;
 			blurYFramebuffer: WebGLFramebuffer;
@@ -112,6 +120,11 @@ export default function NCSVisualizer(props: {
 	const onInit = useCallback((gl: WebGL2RenderingContext | null): RendererState => {
 		if (!gl) {
 			props.onError("Error: WebGL2 is not supported");
+			return { isError: true };
+		}
+
+		if (!gl.getExtension("EXT_color_buffer_float")) {
+			props.onError(`Error: Rendering to floating-point textures is not supported`);
 			return { isError: true };
 		}
 
@@ -177,15 +190,25 @@ export default function NCSVisualizer(props: {
 		const uNoiseOffsetLoc = gl.getUniformLocation(particleShader, "uNoiseOffset")!;
 		const uAmplitudeLoc = gl.getUniformLocation(particleShader, "uAmplitude")!;
 		const uSeedLoc = gl.getUniformLocation(particleShader, "uSeed")!;
-		const uDotCountLoc = gl.getUniformLocation(particleShader, "uDotCount")!;
-		const uDotRadiusLoc = gl.getUniformLocation(particleShader, "uDotRadius")!;
-		const uDotRadiusPXLoc = gl.getUniformLocation(particleShader, "uDotRadiusPX")!;
 		const uDotSpacingLoc = gl.getUniformLocation(particleShader, "uDotSpacing")!;
 		const uDotOffsetLoc = gl.getUniformLocation(particleShader, "uDotOffset")!;
 		const uSphereRadiusLoc = gl.getUniformLocation(particleShader, "uSphereRadius")!;
 		const uFeatherLoc = gl.getUniformLocation(particleShader, "uFeather")!;
 		const uNoiseFrequencyLoc = gl.getUniformLocation(particleShader, "uNoiseFrequency")!;
 		const uNoiseAmplitudeLoc = gl.getUniformLocation(particleShader, "uNoiseAmplitude")!;
+
+		const dotVertShader = createShader(gl.VERTEX_SHADER, DOT_VERT_SHADER, "dot vertex");
+		if (!dotVertShader) return { isError: true };
+		const dotFragShader = createShader(gl.FRAGMENT_SHADER, DOT_FRAG_SHADER, "dot fragment");
+		if (!dotFragShader) return { isError: true };
+		const dotShader = createProgram(dotVertShader, dotFragShader, "dot");
+		if (!dotShader) return { isError: true };
+
+		const inPositionLocDot = gl.getAttribLocation(dotShader, "inPosition")!;
+		const uDotCountLoc = gl.getUniformLocation(dotShader, "uDotCount")!;
+		const uDotRadiusLoc = gl.getUniformLocation(dotShader, "uDotRadius")!;
+		const uDotRadiusPXLoc = gl.getUniformLocation(dotShader, "uDotRadiusPX")!;
+		const uParticleTextureLoc = gl.getUniformLocation(dotShader, "uParticleTexture")!;
 
 		const blurVertShader = createShader(gl.VERTEX_SHADER, BLUR_VERT_SHADER, "blur vertex");
 		if (!blurVertShader) return { isError: true };
@@ -211,7 +234,8 @@ export default function NCSVisualizer(props: {
 		const uBlurredTextureLoc = gl.getUniformLocation(finalizeShader, "uBlurredTexture")!;
 		const uOriginalTextureLoc = gl.getUniformLocation(finalizeShader, "uOriginalTexture")!;
 
-		const { framebuffer: particleFramebuffer, texture: particleTexture } = createFramebuffer(gl.LINEAR);
+		const { framebuffer: particleFramebuffer, texture: particleTexture } = createFramebuffer(gl.NEAREST);
+		const { framebuffer: dotFramebuffer, texture: dotTexture } = createFramebuffer(gl.NEAREST);
 		const { framebuffer: blurXFramebuffer, texture: blurXTexture } = createFramebuffer(gl.LINEAR);
 		const { framebuffer: blurYFramebuffer, texture: blurYTexture } = createFramebuffer(gl.NEAREST);
 
@@ -231,26 +255,31 @@ export default function NCSVisualizer(props: {
 		return {
 			isError: false,
 			particleShader,
+			dotShader,
 			blurShader,
 			finalizeShader,
 			viewportSize: 0,
+			particleTextureSize: 0,
 
 			inPositionLoc,
+			inPositionLocDot,
 			inPositionLocBlur,
 			inPositionLocFinalize,
 
 			uNoiseOffsetLoc,
 			uAmplitudeLoc,
 			uSeedLoc,
-			uDotCountLoc,
-			uDotRadiusLoc,
-			uDotRadiusPXLoc,
 			uDotSpacingLoc,
 			uDotOffsetLoc,
 			uSphereRadiusLoc,
 			uFeatherLoc,
 			uNoiseFrequencyLoc,
 			uNoiseAmplitudeLoc,
+
+			uDotCountLoc,
+			uDotRadiusLoc,
+			uDotRadiusPXLoc,
+			uParticleTextureLoc,
 
 			uBlurRadiusLoc,
 			uBlurDirectionLoc,
@@ -264,6 +293,8 @@ export default function NCSVisualizer(props: {
 
 			particleFramebuffer,
 			particleTexture,
+			dotFramebuffer,
+			dotTexture,
 			blurXFramebuffer,
 			blurXTexture,
 			blurYFramebuffer,
@@ -277,7 +308,7 @@ export default function NCSVisualizer(props: {
 		state.viewportSize = Math.min(gl.canvas.width, gl.canvas.height);
 		gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
-		gl.bindTexture(gl.TEXTURE_2D, state.particleTexture);
+		gl.bindTexture(gl.TEXTURE_2D, state.dotTexture);
 		gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8, state.viewportSize, state.viewportSize, 0, gl.RED, gl.UNSIGNED_BYTE, null);
 
 		gl.bindTexture(gl.TEXTURE_2D, state.blurXTexture);
@@ -290,12 +321,6 @@ export default function NCSVisualizer(props: {
 	const onRender = useCallback((gl: WebGL2RenderingContext | null, data: CanvasData, state: RendererState) => {
 		if (state.isError || !gl) return;
 
-		// render particles
-		gl.bindFramebuffer(gl.FRAMEBUFFER, state.particleFramebuffer);
-
-		gl.clearColor(0, 0, 0, 0);
-		gl.clear(gl.COLOR_BUFFER_BIT);
-
 		const progress = Spicetify.Player.getProgress() / 1000;
 
 		const uNoiseOffset = (0.5 * progress + sampleAccumulatedIntegral(data.amplitudeCurve, progress)) * 75 * 0.01;
@@ -304,20 +329,32 @@ export default function NCSVisualizer(props: {
 		const uDotCount = 322;
 		const uDotRadius = 0.9 / uDotCount;
 		const uDotRadiusPX = uDotRadius * 0.5 * state.viewportSize;
-		const uDotSpacing = 0.9 / (uDotCount - 1);
+		const uDotSpacing = 0.9;
 		const uDotOffset = -0.9 / 2;
 		const uSphereRadius = mapLinear(uAmplitude, 0, 1, 0.75 * 0.9, 0.9);
 		const uFeather = Math.pow(uAmplitude + 3, 2) * (45 / 1568);
-		const uNoiseFrequency = 4 / uDotCount;
+		const uNoiseFrequency = 4;
 		const uNoiseAmplitude = 0.32 * 0.9;
+
+		if (state.particleTextureSize !== uDotCount) {
+			state.particleTextureSize = uDotCount;
+
+			gl.bindTexture(gl.TEXTURE_2D, state.particleTexture);
+			gl.texImage2D(gl.TEXTURE_2D, 0, gl.RG32F, uDotCount, uDotCount, 0, gl.RG, gl.FLOAT, null);
+		}
+
+		// calculate particle positions
+		gl.disable(gl.BLEND);
+		gl.bindFramebuffer(gl.FRAMEBUFFER, state.particleFramebuffer);
+		gl.viewport(0, 0, uDotCount, uDotCount);
+
+		gl.clearColor(0, 0, 0, 0);
+		gl.clear(gl.COLOR_BUFFER_BIT);
 
 		gl.useProgram(state.particleShader);
 		gl.uniform1f(state.uNoiseOffsetLoc, uNoiseOffset);
 		gl.uniform1f(state.uAmplitudeLoc, uAmplitude);
 		gl.uniform1i(state.uSeedLoc, uSeed);
-		gl.uniform1i(state.uDotCountLoc, uDotCount);
-		gl.uniform1f(state.uDotRadiusLoc, uDotRadius);
-		gl.uniform1f(state.uDotRadiusPXLoc, uDotRadiusPX);
 		gl.uniform1f(state.uDotSpacingLoc, uDotSpacing);
 		gl.uniform1f(state.uDotOffsetLoc, uDotOffset);
 		gl.uniform1f(state.uSphereRadiusLoc, uSphereRadius);
@@ -328,9 +365,30 @@ export default function NCSVisualizer(props: {
 		gl.bindBuffer(gl.ARRAY_BUFFER, state.quadBuffer);
 		gl.enableVertexAttribArray(state.inPositionLoc);
 		gl.vertexAttribPointer(state.inPositionLoc, 2, gl.FLOAT, false, 0, 0);
+		gl.drawArrays(gl.TRIANGLE_FAN, 0, 4);
+
+		// render dots
+		gl.enable(gl.BLEND);
+		gl.bindFramebuffer(gl.FRAMEBUFFER, state.dotFramebuffer);
+		gl.viewport(0, 0, state.viewportSize, state.viewportSize);
+
+		gl.clearColor(0, 0, 0, 0);
+		gl.clear(gl.COLOR_BUFFER_BIT);
+
+		gl.useProgram(state.dotShader);
+		gl.uniform1i(state.uDotCountLoc, uDotCount);
+		gl.uniform1f(state.uDotRadiusLoc, uDotRadius);
+		gl.uniform1f(state.uDotRadiusPXLoc, uDotRadiusPX);
+		gl.uniform1i(state.uParticleTextureLoc, 0);
+
+		gl.activeTexture(gl.TEXTURE0);
+		gl.bindTexture(gl.TEXTURE_2D, state.particleTexture);
+
+		gl.bindBuffer(gl.ARRAY_BUFFER, state.quadBuffer);
+		gl.enableVertexAttribArray(state.inPositionLocDot);
+		gl.vertexAttribPointer(state.inPositionLocDot, 2, gl.FLOAT, false, 0, 0);
 
 		gl.drawArraysInstanced(gl.TRIANGLE_FAN, 0, 4, uDotCount * uDotCount);
-		gl.bindTexture(gl.TEXTURE_2D, state.particleTexture);
 
 		// blur in X direction
 		gl.bindFramebuffer(gl.FRAMEBUFFER, state.blurXFramebuffer);
@@ -343,7 +401,7 @@ export default function NCSVisualizer(props: {
 		gl.uniform1i(state.uBlurInputTextureLoc, 0);
 
 		gl.activeTexture(gl.TEXTURE0);
-		gl.bindTexture(gl.TEXTURE_2D, state.particleTexture);
+		gl.bindTexture(gl.TEXTURE_2D, state.dotTexture);
 
 		gl.bindBuffer(gl.ARRAY_BUFFER, state.quadBuffer);
 		gl.enableVertexAttribArray(state.inPositionLocBlur);
@@ -377,7 +435,7 @@ export default function NCSVisualizer(props: {
 		gl.activeTexture(gl.TEXTURE0);
 		gl.bindTexture(gl.TEXTURE_2D, state.blurYTexture);
 		gl.activeTexture(gl.TEXTURE1);
-		gl.bindTexture(gl.TEXTURE_2D, state.particleTexture);
+		gl.bindTexture(gl.TEXTURE_2D, state.dotTexture);
 
 		gl.bindBuffer(gl.ARRAY_BUFFER, state.quadBuffer);
 		gl.enableVertexAttribArray(state.inPositionLocFinalize);

@@ -1,12 +1,19 @@
 export const vertexShader = `#version 300 es
 
+in vec2 inPosition;
+out vec2 fragUV;
+
+void main() {
+    gl_Position = vec4(inPosition, 0.0, 1.0);
+    fragUV = (inPosition + 1.0) / 2.0;
+}
+`;
+export const fragmentShader = `#version 300 es
+precision highp float;
+
 uniform float uNoiseOffset;
 uniform float uAmplitude;
 uniform int uSeed;
-
-uniform int uDotCount;
-uniform float uDotRadius;
-uniform float uDotRadiusPX;
 
 uniform float uDotSpacing;
 uniform float uDotOffset;
@@ -17,10 +24,8 @@ uniform float uFeather;
 uniform float uNoiseFrequency;
 uniform float uNoiseAmplitude;
 
-in vec2 inPosition;
-
-out vec2 fragUV;
-out float fragDotRadiusPX;
+in vec2 fragUV;
+out vec2 outColor;
 
 // https://github.com/Auburn/FastNoiseLite
 
@@ -92,10 +97,8 @@ float fractalNoise(vec3 coord) {
 }
 
 void main() {
-    vec2 dotPos = vec2(float(gl_InstanceID % uDotCount), float(gl_InstanceID / uDotCount));
-    float noise = fractalNoise(vec3(dotPos * uNoiseFrequency, uNoiseOffset)) * uNoiseAmplitude;
-
-    vec3 dotCenter = vec3(dotPos * uDotSpacing + uDotOffset + noise, (noise + 0.5 * uNoiseAmplitude) * uAmplitude * 0.4);
+    float noise = fractalNoise(vec3(fragUV * uNoiseFrequency, uNoiseOffset)) * uNoiseAmplitude;
+    vec3 dotCenter = vec3(fragUV * uDotSpacing + uDotOffset + noise, (noise + 0.5 * uNoiseAmplitude) * uAmplitude * 0.4);
     
     float distanceFromCenter = length(dotCenter);
     dotCenter /= distanceFromCenter;
@@ -107,21 +110,6 @@ void main() {
     dotCenter *= featherStrength * (uSphereRadius / distanceFromCenter - 1.0) + 1.0;
 
     dotCenter.y *= -1.0;
-
-    gl_Position = vec4(dotCenter.xy + inPosition * uDotRadius * (1.0 + 1.0 / uDotRadiusPX), 0.0, 1.0);
-    fragUV = inPosition;
-    fragDotRadiusPX = uDotRadiusPX + 1.0;
-}
-`;
-export const fragmentShader = `#version 300 es
-precision highp float;
-
-in vec2 fragUV;
-in float fragDotRadiusPX;
-out float outColor;
-
-void main() {
-    float t = clamp((1.0 - length(fragUV)) * fragDotRadiusPX, 0.0, 1.0);
-    outColor = t;
+    outColor = dotCenter.xy;
 }
 `;
