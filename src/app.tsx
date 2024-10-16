@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useState } from "react";
 import styles from "./css/app.module.scss";
 import LoadingIcon from "./components/LoadingIcon";
 import NCSVisualizer from "./components/renderer/NCSVisualizer";
-import SpectrumVisualizer from "./components/renderer/SpectrumVisualizer";
 
 enum VisualizerState {
 	LOADING,
@@ -95,12 +94,12 @@ export default function App() {
 
 	return (
 		<div className="visualizer-container">
-			<SpectrumVisualizer
+			{/* <SpectrumVisualizer
 				isEnabled={state == VisualizerState.RUNNING}
 				onError={onError}
 				audioAnalysis={trackData.audioAnalysis}
 				themeColor={trackData.themeColor}
-			/>
+			/> */}
 			<NCSVisualizer
 				isEnabled={state == VisualizerState.RUNNING}
 				onError={onError}
