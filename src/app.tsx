@@ -1,7 +1,10 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import styles from "./css/app.module.scss";
 import LoadingIcon from "./components/LoadingIcon";
 import NCSVisualizer from "./components/renderer/NCSVisualizer";
+import { CacheStatus, ExtensionKind, MetadataService } from "./metadata";
+import { parseProtobuf } from "./protobuf/defs";
+import { ColorResult } from "./protobuf/ColorResult";
 
 enum VisualizerState {
 	LOADING,
@@ -18,6 +21,8 @@ export default function App() {
 	const [trackData, setTrackData] = useState<{ audioAnalysis?: SpotifyAudioAnalysis; themeColor: Spicetify.Color }>({
 		themeColor: Spicetify.Color.fromHex("#535353")
 	});
+
+	const metadataService = useMemo(() => new MetadataService(), []);
 
 	useEffect(() => {
 		const updatePlayerState = async (newState: Spicetify.PlayerState) => {
@@ -39,7 +44,21 @@ export default function App() {
 			const analysisRequestUrl = `https://spclient.wg.spotify.com/audio-attributes/v1/audio-analysis/${uri.id}?format=json`;
 			const [audioAnalysis, vibrantColor] = await Promise.all([
 				Spicetify.CosmosAsync.get(analysisRequestUrl).catch(console.error) as Promise<unknown>,
-				Spicetify.extractColorPreset(item.metadata.image_url).then(colors => colors[0].colorLight)
+				metadataService
+					.fetch(ExtensionKind.EXTRACTED_COLOR, item.metadata.image_url)
+					.catch(s => console.error(`Could not load extracted color metadata. Status: ${CacheStatus[s]}`))
+					.then(colors => {
+						if (
+							!colors ||
+							colors.value.length === 0 ||
+							colors.typeUrl !== "type.googleapis.com/spotify.context_track_color.ColorResult"
+						)
+							return Spicetify.Color.fromHex("#535353");
+
+						const colorResult = parseProtobuf(colors.value, ColorResult);
+						const colorHex = colorResult.colorLight?.rgb?.toString(16).padStart(6, "0") ?? "535353";
+						return Spicetify.Color.fromHex(`#${colorHex}`);
+					})
 			]);
 
 			console.log("[Visualizer] Audio Analysis:", audioAnalysis);
