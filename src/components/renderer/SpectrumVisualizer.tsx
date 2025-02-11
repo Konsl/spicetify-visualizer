@@ -1,7 +1,8 @@
-import React, { useCallback, useMemo } from "react";
+import React, { useCallback, useContext, useMemo } from "react";
 import AnimatedCanvas from "../AnimatedCanvas";
 import { decibelsToAmplitude, binarySearchIndex, sampleSegmentedFunction, smoothstep, mapLinear } from "../../utils";
 import { parseRhythmString } from "../../RhythmString";
+import { ErrorHandlerContext, ErrorRecovery } from "../../error";
 
 type CanvasData = {
 	themeColor: Spicetify.Color;
@@ -18,15 +19,19 @@ type RendererState =
 
 export default function SpectrumVisualizer(props: {
 	isEnabled: boolean;
-	onError: (msg: string) => void;
 	themeColor: Spicetify.Color;
 	audioAnalysis?: SpotifyAudioAnalysis;
 }) {
+	const onError = useContext(ErrorHandlerContext);
+
 	const spectrumData = useMemo(() => {
 		if (!props.audioAnalysis) return [];
 
 		if (props.audioAnalysis.track.rhythm_version !== 1) {
-			props.onError(`Error: Unsupported rhythmstring version ${props.audioAnalysis.track.rhythm_version}`);
+			onError(
+				`Error: Unsupported rhythmstring version ${props.audioAnalysis.track.rhythm_version}`,
+				ErrorRecovery.SONG_CHANGE
+			);
 			return [];
 		}
 
@@ -139,7 +144,7 @@ export default function SpectrumVisualizer(props: {
 
 	const onInit = useCallback((ctx: CanvasRenderingContext2D | null): RendererState => {
 		if (!ctx) {
-			props.onError("Error: 2D rendering is not supported");
+			onError("Error: 2D rendering is not supported", ErrorRecovery.NONE);
 			return { isError: true };
 		}
 

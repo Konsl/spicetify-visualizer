@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from "react";
+import React, { useCallback, useContext, useMemo } from "react";
 import AnimatedCanvas from "../AnimatedCanvas";
 import {
 	sampleAmplitudeMovingAverage,
@@ -17,6 +17,7 @@ import {
 	vertexShader as FINALIZE_VERT_SHADER,
 	fragmentShader as FINALIZE_FRAG_SHADER
 } from "../../shaders/ncs-visualizer/finalize";
+import { ErrorHandlerContext, ErrorRecovery } from "../../error";
 
 type CanvasData = {
 	themeColor: Spicetify.Color;
@@ -79,10 +80,11 @@ type RendererState =
 
 export default function NCSVisualizer(props: {
 	isEnabled: boolean;
-	onError: (msg: string) => void;
 	themeColor: Spicetify.Color;
 	audioAnalysis?: SpotifyAudioAnalysis;
 }) {
+	const onError = useContext(ErrorHandlerContext);
+
 	const amplitudeCurve = useMemo(() => {
 		if (!props.audioAnalysis) return [{ x: 0, y: 0 }];
 
@@ -119,12 +121,12 @@ export default function NCSVisualizer(props: {
 
 	const onInit = useCallback((gl: WebGL2RenderingContext | null): RendererState => {
 		if (!gl) {
-			props.onError("Error: WebGL2 is not supported");
+			onError("Error: WebGL2 is not supported", ErrorRecovery.NONE);
 			return { isError: true };
 		}
 
 		if (!gl.getExtension("EXT_color_buffer_float")) {
-			props.onError(`Error: Rendering to floating-point textures is not supported`);
+			onError(`Error: Rendering to floating-point textures is not supported`, ErrorRecovery.NONE);
 			return { isError: true };
 		}
 
@@ -134,11 +136,11 @@ export default function NCSVisualizer(props: {
 			gl.compileShader(shader);
 
 			if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS) && !gl.isContextLost()) {
-				const msg = `Error: Failed to compile ${name} shader`;
+				const msg = `Error: Failed to compile '${name}' shader`;
 				const log = gl.getShaderInfoLog(shader);
-				console.error(msg, log);
+				console.error(`[Visualizer] ${msg}`, log);
 
-				props.onError(msg);
+				onError(msg, ErrorRecovery.NONE);
 				return null;
 			}
 
@@ -152,11 +154,11 @@ export default function NCSVisualizer(props: {
 			gl.linkProgram(shader);
 
 			if (!gl.getProgramParameter(shader, gl.LINK_STATUS) && !gl.isContextLost()) {
-				const msg = `Error: Failed to link ${name} shader`;
+				const msg = `Error: Failed to link '${name}' shader`;
 				const log = gl.getProgramInfoLog(shader);
-				console.error(msg, log);
+				console.error(`[Visualizer] ${msg}`, log);
 
-				props.onError(msg);
+				onError(msg, ErrorRecovery.NONE);
 				return null;
 			}
 
@@ -243,11 +245,11 @@ export default function NCSVisualizer(props: {
 		gl.bindBuffer(gl.ARRAY_BUFFER, quadBuffer);
 		// prettier-ignore
 		gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
-    		-1, -1,
-    		-1,  1,
-			 1,  1,
-    		 1, -1
-		]), gl.STATIC_DRAW);
+            -1, -1,
+            -1, 1,
+            1, 1,
+            1, -1
+        ]), gl.STATIC_DRAW);
 
 		gl.enable(gl.BLEND);
 		gl.blendEquation(gl.MAX);

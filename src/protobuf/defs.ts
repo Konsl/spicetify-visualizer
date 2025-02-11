@@ -200,7 +200,7 @@ export function PBMessage<T extends Record<string, unknown>>(fields: PBMessageFi
 	];
 }
 
-export function parseProtobuf<T> (data: Uint8Array, type: PBValue<T>): T {
+export function parseProtobuf<T>(data: Uint8Array, type: PBValue<T>): T {
 	const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
 	return type[1](view);
 }

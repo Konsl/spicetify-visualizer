@@ -1,6 +1,6 @@
 export enum ExtensionKind {
 	UNKNOWN_EXTENSION = 0,
-	EXTRACTED_COLOR = 23, // type.googleapis.com/spotify.context_track_color.ColorResult
+	EXTRACTED_COLOR = 23 // type.googleapis.com/spotify.context_track_color.ColorResult
 }
 
 export enum CacheStatus {
@@ -73,7 +73,7 @@ export class MetadataService {
 					}
 
 					const data = response.extensionResult[0].extensionData;
-                    resolve(data);
+					resolve(data);
 				}
 			);
 		});

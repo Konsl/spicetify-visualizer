@@ -5,48 +5,70 @@ import NCSVisualizer from "./components/renderer/NCSVisualizer";
 import { CacheStatus, ExtensionKind, MetadataService } from "./metadata";
 import { parseProtobuf } from "./protobuf/defs";
 import { ColorResult } from "./protobuf/ColorResult";
+import { ErrorData, ErrorHandlerContext, ErrorRecovery } from "./error";
 
-enum VisualizerState {
-	LOADING,
-	RUNNING,
-	ERROR_NOT_PLAYING,
-	ERROR_UNSUPPORTED_TRACK_TYPE,
-	ERROR_NO_NETWORK,
-	ERROR_UNKNOWN
-}
+type VisualizerState =
+	| {
+			state: "loading" | "running";
+	  }
+	| {
+			state: "error";
+			errorData: ErrorData;
+	  };
 
 export default function App() {
-	const [state, setState] = useState<VisualizerState>(VisualizerState.LOADING);
-	const [errorMessage, setErrorMessage] = useState<string>("");
+	const [state, setState] = useState<VisualizerState>({ state: "loading" });
 	const [trackData, setTrackData] = useState<{ audioAnalysis?: SpotifyAudioAnalysis; themeColor: Spicetify.Color }>({
 		themeColor: Spicetify.Color.fromHex("#535353")
 	});
 
+	const updateState = useCallback(
+		(newState: VisualizerState) =>
+			setState(oldState => {
+				if (oldState.state === "error" && oldState.errorData.recovery === ErrorRecovery.NONE) return oldState;
+
+				return newState;
+			}),
+		[]
+	);
+
+	const onError = useCallback((msg: string, recovery: ErrorRecovery) => {
+		updateState({
+			state: "error",
+			errorData: {
+				message: msg,
+				recovery
+			}
+		});
+	}, []);
+
+	const isUnrecoverableError = state.state === "error" && state.errorData.recovery === ErrorRecovery.NONE;
+
 	const metadataService = useMemo(() => new MetadataService(), []);
 
-	useEffect(() => {
-		const updatePlayerState = async (newState: Spicetify.PlayerState) => {
+	const updatePlayerState = useCallback(
+		async (newState: Spicetify.PlayerState) => {
 			const item = newState?.item;
 
 			if (!item) {
-				setState(VisualizerState.ERROR_NOT_PLAYING);
+				onError("Start playing a song to see the visualization!", ErrorRecovery.SONG_CHANGE);
 				return;
 			}
 
 			const uri = Spicetify.URI.fromString(item.uri);
 			if (uri.type !== Spicetify.URI.Type.TRACK) {
-				setState(VisualizerState.ERROR_UNSUPPORTED_TRACK_TYPE);
+				onError("Error: The type of track you're listening to is currently not supported", ErrorRecovery.SONG_CHANGE);
 				return;
 			}
 
-			setState(VisualizerState.LOADING);
+			updateState({ state: "loading" });
 
 			const analysisRequestUrl = `https://spclient.wg.spotify.com/audio-attributes/v1/audio-analysis/${uri.id}?format=json`;
 			const [audioAnalysis, vibrantColor] = await Promise.all([
-				Spicetify.CosmosAsync.get(analysisRequestUrl).catch(console.error) as Promise<unknown>,
+				Spicetify.CosmosAsync.get(analysisRequestUrl).catch(e => console.error("[Visualizer]", e)) as Promise<unknown>,
 				metadataService
 					.fetch(ExtensionKind.EXTRACTED_COLOR, item.metadata.image_url)
-					.catch(s => console.error(`Could not load extracted color metadata. Status: ${CacheStatus[s]}`))
+					.catch(s => console.error(`[Visualizer] Could not load extracted color metadata. Status: ${CacheStatus[s]}`))
 					.then(colors => {
 						if (
 							!colors ||
@@ -61,40 +83,46 @@ export default function App() {
 					})
 			]);
 
-			console.log("[Visualizer] Audio Analysis:", audioAnalysis);
-
 			if (!audioAnalysis) {
-				setState(VisualizerState.ERROR_NO_NETWORK);
+				onError(
+					"Error: The audio analysis could not be loaded, please check your internet connection",
+					ErrorRecovery.MANUAL
+				);
 				return;
 			}
 
 			if (typeof audioAnalysis !== "object") {
-				onError(`Invalid audio analysis data (${audioAnalysis})`);
+				onError(`Invalid audio analysis data (${audioAnalysis})`, ErrorRecovery.MANUAL);
 				return;
 			}
 
 			if (!("track" in audioAnalysis) || !("segments" in audioAnalysis)) {
 				const message =
-					"message" in audioAnalysis
-						? (audioAnalysis.message as string)
-						: "error" in audioAnalysis
-							? (audioAnalysis.error as string)
+					"error" in audioAnalysis
+						? (audioAnalysis.error as string)
+						: "message" in audioAnalysis
+							? (audioAnalysis.message as string)
 							: "Unknown error";
 
 				const code = "code" in audioAnalysis ? (audioAnalysis.code as number) : null;
 
 				if (code !== null) {
-					onError(`Error ${code}: ${message}`);
+					onError(`Error ${code}: ${message}`, ErrorRecovery.MANUAL);
 					return;
 				} else {
-					onError(message);
+					onError(message, ErrorRecovery.MANUAL);
 					return;
 				}
 			}
 
 			setTrackData({ audioAnalysis: audioAnalysis as SpotifyAudioAnalysis, themeColor: vibrantColor });
-			setState(VisualizerState.RUNNING);
-		};
+			updateState({ state: "running" });
+		},
+		[metadataService]
+	);
+
+	useEffect(() => {
+		if (isUnrecoverableError) return;
 
 		const songChangeListener = (event?: Event & { data: Spicetify.PlayerState }) => {
 			if (event?.data) updatePlayerState(event.data);
@@ -104,42 +132,36 @@ export default function App() {
 		updatePlayerState(Spicetify.Player.data);
 
 		return () => Spicetify.Player.removeEventListener("songchange", songChangeListener as PlayerEventListener);
-	}, []);
-
-	const onError = useCallback((msg: string) => {
-		setErrorMessage(msg);
-		setState(VisualizerState.ERROR_UNKNOWN);
-	}, []);
+	}, [isUnrecoverableError, updatePlayerState]);
 
 	return (
 		<div className="visualizer-container">
-			{/* <SpectrumVisualizer
-				isEnabled={state == VisualizerState.RUNNING}
-				onError={onError}
-				audioAnalysis={trackData.audioAnalysis}
-				themeColor={trackData.themeColor}
-			/> */}
-			<NCSVisualizer
-				isEnabled={state == VisualizerState.RUNNING}
-				onError={onError}
-				audioAnalysis={trackData.audioAnalysis}
-				themeColor={trackData.themeColor}
-			/>
+			{!isUnrecoverableError && (
+				<ErrorHandlerContext.Provider value={onError}>
+					{/* <SpectrumVisualizer
+                        isEnabled={state.state === "running"}
+                        audioAnalysis={trackData.audioAnalysis}
+                        themeColor={trackData.themeColor}
+                    /> */}
+					<NCSVisualizer
+						isEnabled={state.state === "running"}
+						audioAnalysis={trackData.audioAnalysis}
+						themeColor={trackData.themeColor}
+					/>
+				</ErrorHandlerContext.Provider>
+			)}
 
-			{state == VisualizerState.LOADING ? (
+			{state.state === "loading" ? (
 				<LoadingIcon />
-			) : state == VisualizerState.ERROR_NOT_PLAYING ? (
-				<div className={styles.unavailable_message}>{"Start playing a song to see the visualization!"}</div>
-			) : state == VisualizerState.ERROR_UNSUPPORTED_TRACK_TYPE ? (
-				<div className={styles.unavailable_message}>
-					{"Error: The type of track you're listening to is currently not supported"}
+			) : state.state === "error" ? (
+				<div className={styles.error_container}>
+					<div className={styles.error_message}>{state.errorData.message}</div>
+					{state.errorData.recovery === ErrorRecovery.MANUAL && (
+						<Spicetify.ReactComponent.ButtonPrimary onClick={() => updatePlayerState(Spicetify.Player.data)}>
+							Try again
+						</Spicetify.ReactComponent.ButtonPrimary>
+					)}
 				</div>
-			) : state == VisualizerState.ERROR_NO_NETWORK ? (
-				<div className={styles.unavailable_message}>
-					{"Error: The audio analysis could not be loaded, please check your internet connection"}
-				</div>
-			) : state == VisualizerState.ERROR_UNKNOWN ? (
-				<div className={styles.unavailable_message}>{errorMessage}</div>
 			) : null}
 		</div>
 	);
