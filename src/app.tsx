@@ -98,9 +98,9 @@ export default function App() {
 
 			if (!("track" in audioAnalysis) || !("segments" in audioAnalysis)) {
 				const message =
-					"error" in audioAnalysis
+					"error" in audioAnalysis && audioAnalysis.error
 						? (audioAnalysis.error as string)
-						: "message" in audioAnalysis
+						: "message" in audioAnalysis && audioAnalysis.message
 							? (audioAnalysis.message as string)
 							: "Unknown error";
 
