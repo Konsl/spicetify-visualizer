@@ -6,6 +6,7 @@ import { CacheStatus, ExtensionKind, MetadataService } from "./metadata";
 import { parseProtobuf } from "./protobuf/defs";
 import { ColorResult } from "./protobuf/ColorResult";
 import { ErrorData, ErrorHandlerContext, ErrorRecovery } from "./error";
+import DebugVisualizer from "./components/renderer/DebugVisualizer";
 
 type VisualizerState =
 	| {
@@ -142,8 +143,13 @@ export default function App() {
                         isEnabled={state.state === "running"}
                         audioAnalysis={trackData.audioAnalysis}
                         themeColor={trackData.themeColor}
-                    /> */}
-					<NCSVisualizer
+                    />
+                    {/* <NCSVisualizer
+						isEnabled={state.state === "running"}
+						audioAnalysis={trackData.audioAnalysis}
+						themeColor={trackData.themeColor}
+					/> */}
+					<DebugVisualizer
 						isEnabled={state.state === "running"}
 						audioAnalysis={trackData.audioAnalysis}
 						themeColor={trackData.themeColor}
