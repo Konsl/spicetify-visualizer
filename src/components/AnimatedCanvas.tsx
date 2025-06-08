@@ -23,7 +23,7 @@ export default function AnimatedCanvas<T, U, V extends keyof ContextTypeMap>(pro
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 	const [state, setState] = useState<U | null>(null);
 
-	const updateResolution = useCallback((canvas: HTMLCanvasElement) => {
+	const updateResolution = useCallback((canvas: HTMLCanvasElement, win: Window) => {
 		const screenWidth = Math.round(canvas.clientWidth * window.devicePixelRatio);
 		const screenHeight = Math.round(canvas.clientHeight * window.devicePixelRatio);
 
@@ -43,10 +43,13 @@ export default function AnimatedCanvas<T, U, V extends keyof ContextTypeMap>(pro
 		const canvas = canvasRef.current;
 		if (!canvas) return;
 
+		const win = canvas.ownerDocument.defaultView;
+		if (!win) return;
+
 		const context = canvas.getContext(contextType) as ContextTypeMap[V] | null;
 
 		const state = onInit(context);
-		updateResolution(canvas);
+		updateResolution(canvas, win);
 		onResize(context, state);
 		setState(state);
 
@@ -59,6 +62,9 @@ export default function AnimatedCanvas<T, U, V extends keyof ContextTypeMap>(pro
 		const canvas = canvasRef.current;
 		if (!canvas) return;
 
+		const win = canvas.ownerDocument.defaultView;
+		if (!win) return;
+
 		const context = canvas.getContext(contextType) as ContextTypeMap[V] | null;
 
 		let requestId = 0;
@@ -66,23 +72,29 @@ export default function AnimatedCanvas<T, U, V extends keyof ContextTypeMap>(pro
 			if (!state) return;
 
 			onRender(context, data, state, time);
-			requestId = requestAnimationFrame(wrapper);
+			requestId = win.requestAnimationFrame(wrapper);
 		};
 
-		requestId = requestAnimationFrame(wrapper);
+		requestId = win.requestAnimationFrame(wrapper);
 		return () => {
-			if (requestId) cancelAnimationFrame(requestId);
+			if (requestId) win.cancelAnimationFrame(requestId);
 		};
 	}, [contextType, onRender, data, state, isEnabled]);
 
 	useEffect(() => {
 		if (!canvasRef.current) return;
 
-		const resizeObserver = new ResizeObserver(() => {
+		const win = canvasRef.current.ownerDocument.defaultView;
+		if (!win) return;
+
+		const resizeObserver = new win.ResizeObserver(() => {
 			const canvas = canvasRef.current;
 			if (!canvas) return;
 
-			updateResolution(canvas);
+			const win = canvas.ownerDocument.defaultView;
+			if (!win) return;
+
+			updateResolution(canvas, win);
 
 			const context = canvas.getContext(contextType) as ContextTypeMap[V] | null;
 			if (context && state) onResize(context, state);

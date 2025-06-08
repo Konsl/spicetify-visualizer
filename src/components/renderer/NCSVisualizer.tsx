@@ -18,6 +18,7 @@ import {
 	fragmentShader as FINALIZE_FRAG_SHADER
 } from "../../shaders/ncs-visualizer/finalize";
 import { ErrorHandlerContext, ErrorRecovery } from "../../error";
+import { RendererProps } from "../../app";
 
 type CanvasData = {
 	themeColor: Spicetify.Color;
@@ -78,11 +79,7 @@ type RendererState =
 			blurYTexture: WebGLTexture;
 	  };
 
-export default function NCSVisualizer(props: {
-	isEnabled: boolean;
-	themeColor: Spicetify.Color;
-	audioAnalysis?: SpotifyAudioAnalysis;
-}) {
+export default function NCSVisualizer(props: RendererProps) {
 	const onError = useContext(ErrorHandlerContext);
 
 	const amplitudeCurve = useMemo(() => {

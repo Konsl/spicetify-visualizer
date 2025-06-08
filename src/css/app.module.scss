@@ -4,12 +4,18 @@
 	inset: 0;
 }
 
-:global(.visualizer-container) > * {
+:global(.visualizer-container) > *:not(.main_menu_button) {
 	position: absolute;
 
 	top: 50%;
 	left: 50%;
 	translate: -50% -50%;
+}
+
+.main_menu_button {
+	position: absolute;
+	top: 10px;
+	right: 10px;
 }
 
 .error_container {

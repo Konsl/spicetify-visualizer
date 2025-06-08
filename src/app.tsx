@@ -7,6 +7,39 @@ import { parseProtobuf } from "./protobuf/defs";
 import { ColorResult } from "./protobuf/ColorResult";
 import { ErrorData, ErrorHandlerContext, ErrorRecovery } from "./error";
 import DebugVisualizer from "./components/renderer/DebugVisualizer";
+import SpectrumVisualizer from "./components/renderer/SpectrumVisualizer";
+import { MainMenuButton } from "./menu";
+import { createVisualizerWindow } from "./window";
+
+export type RendererProps = {
+	isEnabled: boolean;
+	themeColor: Spicetify.Color;
+	audioAnalysis?: SpotifyAudioAnalysis;
+};
+
+export type RendererDefinition = {
+	id: string;
+	name: string;
+	renderer: React.FunctionComponent<RendererProps>;
+};
+
+const RENDERERS: RendererDefinition[] = [
+	{
+		id: "ncs",
+		name: "NCS",
+		renderer: NCSVisualizer
+	},
+	{
+		id: "spectrum",
+		name: "Spectrum (very WIP)",
+		renderer: SpectrumVisualizer
+	},
+	{
+		id: "debug",
+		name: "DEBUG",
+		renderer: DebugVisualizer
+	}
+];
 
 type VisualizerState =
 	| {
@@ -17,7 +50,10 @@ type VisualizerState =
 			errorData: ErrorData;
 	  };
 
-export default function App() {
+export default function App(props: { isSecondaryWindow?: boolean; initialRenderer?: string }) {
+	const [rendererId, setRendererId] = useState<string>(props.initialRenderer || "ncs");
+	const Renderer = RENDERERS.find(v => v.id === rendererId)?.renderer;
+
 	const [state, setState] = useState<VisualizerState>({ state: "loading" });
 	const [trackData, setTrackData] = useState<{ audioAnalysis?: SpotifyAudioAnalysis; themeColor: Spicetify.Color }>({
 		themeColor: Spicetify.Color.fromHex("#535353")
@@ -138,23 +174,29 @@ export default function App() {
 	return (
 		<div className="visualizer-container">
 			{!isUnrecoverableError && (
-				<ErrorHandlerContext.Provider value={onError}>
-					{/* <SpectrumVisualizer
-                        isEnabled={state.state === "running"}
-                        audioAnalysis={trackData.audioAnalysis}
-                        themeColor={trackData.themeColor}
-                    />
-                    {/* <NCSVisualizer
-						isEnabled={state.state === "running"}
-						audioAnalysis={trackData.audioAnalysis}
-						themeColor={trackData.themeColor}
-					/> */}
-					<DebugVisualizer
-						isEnabled={state.state === "running"}
-						audioAnalysis={trackData.audioAnalysis}
-						themeColor={trackData.themeColor}
-					/>
-				</ErrorHandlerContext.Provider>
+				<>
+					<ErrorHandlerContext.Provider value={onError}>
+						{Renderer && (
+							<Renderer
+								isEnabled={state.state === "running"}
+								audioAnalysis={trackData.audioAnalysis}
+								themeColor={trackData.themeColor}
+							/>
+						)}
+					</ErrorHandlerContext.Provider>
+					{props.isSecondaryWindow || (
+						<MainMenuButton
+							className={styles.main_menu_button}
+							renderers={RENDERERS}
+							onOpenWindow={() => {
+								if (!createVisualizerWindow(rendererId)) {
+									Spicetify.showNotification("Failed to open a new window", true);
+								}
+							}}
+							onSelectRenderer={id => setRendererId(id)}
+						/>
+					)}
+				</>
 			)}
 
 			{state.state === "loading" ? (

@@ -1,8 +1,9 @@
 import React, { useCallback, useContext, useMemo } from "react";
 import AnimatedCanvas from "../AnimatedCanvas";
-import { decibelsToAmplitude, binarySearchIndex, sampleSegmentedFunction, smoothstep, mapLinear } from "../../utils";
+import { decibelsToAmplitude, binarySearchIndex, mapLinear } from "../../utils";
 import { parseRhythmString, RhythmString } from "../../RhythmString";
 import { ErrorHandlerContext, ErrorRecovery } from "../../error";
+import { RendererProps } from "../../app";
 
 type CanvasData = {
 	barDuration: number;
@@ -85,7 +86,7 @@ const SECTIONS: Section[] = [
 	{
 		name: "Position",
 		layer: "overlay",
-		render: (ctx, audio, time, area) => {
+		render: (ctx, _audio, time, area) => {
 			ctx.lineWidth = 5;
 			ctx.strokeStyle = ctx.fillStyle = "white";
 			ctx.beginPath();
@@ -275,11 +276,7 @@ const SECTIONS: Section[] = [
 	}
 ];
 
-export default function DebugVisualizer(props: {
-	isEnabled: boolean;
-	themeColor: Spicetify.Color;
-	audioAnalysis?: SpotifyAudioAnalysis;
-}) {
+export default function DebugVisualizer(props: RendererProps) {
 	const onError = useContext(ErrorHandlerContext);
 
 	const barDuration = useMemo(() => {

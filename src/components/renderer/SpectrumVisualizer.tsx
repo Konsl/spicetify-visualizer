@@ -3,6 +3,7 @@ import AnimatedCanvas from "../AnimatedCanvas";
 import { decibelsToAmplitude, binarySearchIndex, sampleSegmentedFunction, smoothstep, mapLinear } from "../../utils";
 import { parseRhythmString } from "../../RhythmString";
 import { ErrorHandlerContext, ErrorRecovery } from "../../error";
+import { RendererProps } from "../../app";
 
 type CanvasData = {
 	themeColor: Spicetify.Color;
@@ -17,11 +18,7 @@ type RendererState =
 			isError: false;
 	  };
 
-export default function SpectrumVisualizer(props: {
-	isEnabled: boolean;
-	themeColor: Spicetify.Color;
-	audioAnalysis?: SpotifyAudioAnalysis;
-}) {
+export default function SpectrumVisualizer(props: RendererProps) {
 	const onError = useContext(ErrorHandlerContext);
 
 	const spectrumData = useMemo(() => {
