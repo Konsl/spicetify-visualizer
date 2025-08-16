@@ -166,18 +166,27 @@ export default function SpectrumVisualizer(props: RendererProps) {
 		const spaceWidth = (ctx.canvas.width - barWidth * barCount) / (barCount + 1);
 
 		for (let i = 0; i < barCount; i++) {
-			const value = sampleSegmentedFunction(
+			// Sample the value for this bar
+			let value = sampleSegmentedFunction(
 				data.spectrumData[i],
 				x => x.x,
 				x => x.y,
 				x => x,
 				progress
 			);
+			
+			// Amplify the value to make bars taller (1.8x taller)
+			value = Math.min(value * 1.8, 1.0);
+			
+			// Calculate bar position and draw it
+			const barHeight = value * ctx.canvas.height;
+			const barY = ctx.canvas.height - barHeight;
+			
 			ctx.fillRect(
 				spaceWidth * (i + 1) + barWidth * i,
-				ctx.canvas.height - value * ctx.canvas.height,
+				barY,
 				barWidth,
-				value * ctx.canvas.height
+				barHeight
 			);
 		}
 	}, []);

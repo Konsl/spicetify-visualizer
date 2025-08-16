@@ -23,6 +23,10 @@ export function createVisualizerWindow(rendererId: string) {
 		win.document.documentElement.className = document.documentElement.className;
 		win.document.body.className = document.body.className;
 
+		// Make background transparent
+		win.document.body.style.background = 'transparent';
+		win.document.documentElement.style.background = 'transparent';
+
 		Spicetify.ReactDOM.render(<App isSecondaryWindow={true} initialRenderer={rendererId} />, win.document.body);
 
 		return true;
