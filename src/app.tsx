@@ -8,6 +8,8 @@ import { ColorResult } from "./protobuf/ColorResult";
 import { ErrorData, ErrorHandlerContext, ErrorRecovery } from "./error";
 import DebugVisualizer from "./components/renderer/DebugVisualizer";
 import SpectrumVisualizer from "./components/renderer/SpectrumVisualizer";
+import CombinedVisualizer from "./components/renderer/CombinedVisualizer";
+import TimelineVisualizer from "./components/renderer/TimelineVisualizer";
 import { MainMenuButton } from "./menu";
 import { createVisualizerWindow } from "./window";
 
@@ -25,13 +27,23 @@ export type RendererDefinition = {
 
 const RENDERERS: RendererDefinition[] = [
 	{
+		id: "combined",
+		name: "🌟 All-in-One",
+		renderer: CombinedVisualizer
+	},
+	{
+		id: "timeline",
+		name: "Timeline",
+		renderer: TimelineVisualizer
+	},
+	{
 		id: "ncs",
 		name: "NCS",
 		renderer: NCSVisualizer
 	},
 	{
 		id: "spectrum",
-		name: "Spectrum (very WIP)",
+		name: "Spectrum",
 		renderer: SpectrumVisualizer
 	},
 	{
@@ -43,12 +55,12 @@ const RENDERERS: RendererDefinition[] = [
 
 type VisualizerState =
 	| {
-			state: "loading" | "running";
-	  }
+		state: "loading" | "running";
+	}
 	| {
-			state: "error";
-			errorData: ErrorData;
-	  };
+		state: "error";
+		errorData: ErrorData;
+	};
 
 export default function App(props: { isSecondaryWindow?: boolean; initialRenderer?: string }) {
 	const [rendererId, setRendererId] = useState<string>(props.initialRenderer || "ncs");
@@ -188,12 +200,15 @@ export default function App(props: { isSecondaryWindow?: boolean; initialRendere
 						<MainMenuButton
 							className={styles.main_menu_button}
 							renderers={RENDERERS}
+							currentRendererId={rendererId}
 							onOpenWindow={() => {
 								if (!createVisualizerWindow(rendererId)) {
 									Spicetify.showNotification("Failed to open a new window", true);
 								}
 							}}
-							onSelectRenderer={id => setRendererId(id)}
+							onSelectRenderer={id => {
+								setRendererId(id);
+							}}
 						/>
 					)}
 				</>

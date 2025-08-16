@@ -97,12 +97,31 @@ float fractalNoise(vec3 coord) {
 }
 
 void main() {
+    // Primary noise layer
     float noise = fractalNoise(vec3(fragUV * uNoiseFrequency, uNoiseOffset)) * uNoiseAmplitude;
-    vec3 dotCenter = vec3(fragUV * uDotSpacing + uDotOffset + noise, (noise + 0.5 * uNoiseAmplitude) * uAmplitude * 0.4);
+    
+    // Add secondary noise layers for more complex movement
+    float secondaryNoise = fractalNoise(vec3(fragUV * uNoiseFrequency * 2.0, uNoiseOffset * 0.7)) * uNoiseAmplitude * 0.3;
+    float tertiaryNoise = fractalNoise(vec3(fragUV * uNoiseFrequency * 0.5, uNoiseOffset * 1.3)) * uNoiseAmplitude * 0.6;
+    
+    // Combine noise layers with amplitude-based weighting
+    float combinedNoise = noise + secondaryNoise * uAmplitude + tertiaryNoise * (1.0 - uAmplitude);
+    
+    // Add rotational motion based on time and amplitude
+    float angle = uNoiseOffset * 0.5 + length(fragUV - 0.5) * 3.14159;
+    vec2 rotation = vec2(cos(angle), sin(angle)) * uAmplitude * 0.1;
+    
+    vec3 dotCenter = vec3(fragUV * uDotSpacing + uDotOffset + combinedNoise + rotation, 
+                         (combinedNoise + 0.5 * uNoiseAmplitude) * uAmplitude * 0.4);
     
     float distanceFromCenter = length(dotCenter);
     dotCenter /= distanceFromCenter;
     distanceFromCenter = min(uSphereRadius, distanceFromCenter);
+    
+    // Add pulsing effect based on amplitude
+    float pulseEffect = 1.0 + sin(uNoiseOffset * 4.0) * uAmplitude * 0.15;
+    distanceFromCenter *= pulseEffect;
+    
     dotCenter *= distanceFromCenter;
 
     float featherRadius = uSphereRadius - uFeather;

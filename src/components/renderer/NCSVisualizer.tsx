@@ -28,56 +28,56 @@ type CanvasData = {
 
 type RendererState =
 	| {
-			isError: true;
-	  }
+		isError: true;
+	}
 	| {
-			isError: false;
-			particleShader: WebGLProgram;
-			dotShader: WebGLProgram;
-			blurShader: WebGLProgram;
-			finalizeShader: WebGLProgram;
-			viewportSize: number;
-			particleTextureSize: number;
+		isError: false;
+		particleShader: WebGLProgram;
+		dotShader: WebGLProgram;
+		blurShader: WebGLProgram;
+		finalizeShader: WebGLProgram;
+		viewportSize: number;
+		particleTextureSize: number;
 
-			inPositionLoc: number;
-			inPositionLocDot: number;
-			inPositionLocBlur: number;
-			inPositionLocFinalize: number;
+		inPositionLoc: number;
+		inPositionLocDot: number;
+		inPositionLocBlur: number;
+		inPositionLocFinalize: number;
 
-			uNoiseOffsetLoc: WebGLUniformLocation;
-			uAmplitudeLoc: WebGLUniformLocation;
-			uSeedLoc: WebGLUniformLocation;
-			uDotSpacingLoc: WebGLUniformLocation;
-			uDotOffsetLoc: WebGLUniformLocation;
-			uSphereRadiusLoc: WebGLUniformLocation;
-			uFeatherLoc: WebGLUniformLocation;
-			uNoiseFrequencyLoc: WebGLUniformLocation;
-			uNoiseAmplitudeLoc: WebGLUniformLocation;
+		uNoiseOffsetLoc: WebGLUniformLocation;
+		uAmplitudeLoc: WebGLUniformLocation;
+		uSeedLoc: WebGLUniformLocation;
+		uDotSpacingLoc: WebGLUniformLocation;
+		uDotOffsetLoc: WebGLUniformLocation;
+		uSphereRadiusLoc: WebGLUniformLocation;
+		uFeatherLoc: WebGLUniformLocation;
+		uNoiseFrequencyLoc: WebGLUniformLocation;
+		uNoiseAmplitudeLoc: WebGLUniformLocation;
 
-			uDotCountLoc: WebGLUniformLocation;
-			uDotRadiusLoc: WebGLUniformLocation;
-			uDotRadiusPXLoc: WebGLUniformLocation;
-			uParticleTextureLoc: WebGLUniformLocation;
+		uDotCountLoc: WebGLUniformLocation;
+		uDotRadiusLoc: WebGLUniformLocation;
+		uDotRadiusPXLoc: WebGLUniformLocation;
+		uParticleTextureLoc: WebGLUniformLocation;
 
-			uBlurRadiusLoc: WebGLUniformLocation;
-			uBlurDirectionLoc: WebGLUniformLocation;
-			uBlurInputTextureLoc: WebGLUniformLocation;
+		uBlurRadiusLoc: WebGLUniformLocation;
+		uBlurDirectionLoc: WebGLUniformLocation;
+		uBlurInputTextureLoc: WebGLUniformLocation;
 
-			uOutputColorLoc: WebGLUniformLocation;
-			uBlurredTextureLoc: WebGLUniformLocation;
-			uOriginalTextureLoc: WebGLUniformLocation;
+		uOutputColorLoc: WebGLUniformLocation;
+		uBlurredTextureLoc: WebGLUniformLocation;
+		uOriginalTextureLoc: WebGLUniformLocation;
 
-			quadBuffer: WebGLBuffer;
+		quadBuffer: WebGLBuffer;
 
-			particleFramebuffer: WebGLFramebuffer;
-			particleTexture: WebGLTexture;
-			dotFramebuffer: WebGLFramebuffer;
-			dotTexture: WebGLTexture;
-			blurXFramebuffer: WebGLFramebuffer;
-			blurXTexture: WebGLTexture;
-			blurYFramebuffer: WebGLFramebuffer;
-			blurYTexture: WebGLTexture;
-	  };
+		particleFramebuffer: WebGLFramebuffer;
+		particleTexture: WebGLTexture;
+		dotFramebuffer: WebGLFramebuffer;
+		dotTexture: WebGLTexture;
+		blurXFramebuffer: WebGLFramebuffer;
+		blurXTexture: WebGLTexture;
+		blurYFramebuffer: WebGLFramebuffer;
+		blurYTexture: WebGLTexture;
+	};
 
 export default function NCSVisualizer(props: RendererProps) {
 	const onError = useContext(ErrorHandlerContext);
@@ -90,9 +90,9 @@ export default function NCSVisualizer(props: RendererProps) {
 		const amplitudeCurve: CurveEntry[] = segments.flatMap(segment =>
 			segment.loudness_max_time
 				? [
-						{ x: segment.start, y: decibelsToAmplitude(segment.loudness_start) },
-						{ x: segment.start + segment.loudness_max_time, y: decibelsToAmplitude(segment.loudness_max) }
-					]
+					{ x: segment.start, y: decibelsToAmplitude(segment.loudness_start) },
+					{ x: segment.start + segment.loudness_max_time, y: decibelsToAmplitude(segment.loudness_max) }
+				]
 				: [{ x: segment.start, y: decibelsToAmplitude(segment.loudness_start) }]
 		);
 
@@ -242,11 +242,11 @@ export default function NCSVisualizer(props: RendererProps) {
 		gl.bindBuffer(gl.ARRAY_BUFFER, quadBuffer);
 		// prettier-ignore
 		gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
-            -1, -1,
-            -1, 1,
-            1, 1,
-            1, -1
-        ]), gl.STATIC_DRAW);
+			-1, -1,
+			-1, 1,
+			1, 1,
+			1, -1
+		]), gl.STATIC_DRAW);
 
 		gl.enable(gl.BLEND);
 		gl.blendEquation(gl.MAX);
