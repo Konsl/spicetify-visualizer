@@ -39,12 +39,10 @@ export const MainMenuButton = React.memo((props: MainMenuProps & { className: st
 	const menuRef = React.useRef<HTMLDivElement>(null);
 
 	const handleClick = React.useCallback(() => {
-		console.log("Menu button clicked"); // Debug log
 		setIsOpen(!isOpen);
 	}, [isOpen]);
 
 	const handleMenuItemClick = React.useCallback((id: string) => {
-		console.log("Renderer selected:", id); // Debug log
 		props.onSelectRenderer(id);
 		setIsOpen(false);
 	}, [props.onSelectRenderer]);
@@ -140,7 +138,6 @@ export const MainMenuButton = React.memo((props: MainMenuProps & { className: st
 					}}>
 						<div
 							onClick={() => {
-								console.log("Open window clicked"); // Debug log
 								props.onOpenWindow();
 								setIsOpen(false);
 							}}

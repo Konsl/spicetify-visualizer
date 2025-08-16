@@ -207,7 +207,6 @@ export default function App(props: { isSecondaryWindow?: boolean; initialRendere
 								}
 							}}
 							onSelectRenderer={id => {
-								console.log("App: Changing renderer from", rendererId, "to", id);
 								setRendererId(id);
 							}}
 						/>

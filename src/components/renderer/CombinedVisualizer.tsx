@@ -13,7 +13,6 @@ interface CombinedVisualizerProps {
 }
 
 export default function CombinedVisualizer(props: CombinedVisualizerProps) {
-	console.log(props.audioAnalysis, props);
 	return (
 		<div style={{
 			width: '100%',
