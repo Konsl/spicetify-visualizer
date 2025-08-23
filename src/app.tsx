@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import styles from "./css/app.module.scss";
 import LoadingIcon from "./components/LoadingIcon";
 import NCSVisualizer from "./components/renderer/NCSVisualizer";
@@ -53,6 +53,8 @@ type VisualizerState =
 export default function App(props: { isSecondaryWindow?: boolean; initialRenderer?: string }) {
 	const [rendererId, setRendererId] = useState<string>(props.initialRenderer || "ncs");
 	const Renderer = RENDERERS.find(v => v.id === rendererId)?.renderer;
+
+	const containerRef = useRef<HTMLDivElement | null>(null);
 
 	const [state, setState] = useState<VisualizerState>({ state: "loading" });
 	const [trackData, setTrackData] = useState<{ audioAnalysis?: SpotifyAudioAnalysis; themeColor: Spicetify.Color }>({
@@ -172,7 +174,7 @@ export default function App(props: { isSecondaryWindow?: boolean; initialRendere
 	}, [isUnrecoverableError, updatePlayerState]);
 
 	return (
-		<div className="visualizer-container">
+		<div className="visualizer-container" ref={containerRef}>
 			{!isUnrecoverableError && (
 				<>
 					<ErrorHandlerContext.Provider value={onError}>
@@ -188,6 +190,9 @@ export default function App(props: { isSecondaryWindow?: boolean; initialRendere
 						<MainMenuButton
 							className={styles.main_menu_button}
 							renderers={RENDERERS}
+							onEnterFullscreen={() => {
+								containerRef.current?.requestFullscreen();
+							}}
 							onOpenWindow={() => {
 								if (!createVisualizerWindow(rendererId)) {
 									Spicetify.showNotification("Failed to open a new window", true);

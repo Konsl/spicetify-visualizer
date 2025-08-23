@@ -9,7 +9,12 @@ const SpotifyIcon = React.memo((props: { name: Spicetify.Icon; size: number }) =
 	/>
 ));
 
-type MainMenuProps = { renderers: RendererDefinition[]; onSelectRenderer: (id: string) => void; onOpenWindow: () => void };
+type MainMenuProps = {
+	renderers: RendererDefinition[];
+	onSelectRenderer: (id: string) => void;
+	onEnterFullscreen: () => void;
+	onOpenWindow: () => void;
+};
 
 const MainMenu = React.memo((props: MainMenuProps) => (
 	<Spicetify.ReactComponent.Menu>
@@ -20,6 +25,12 @@ const MainMenu = React.memo((props: MainMenuProps) => (
 				</Spicetify.ReactComponent.MenuItem>
 			))}
 		</Spicetify.ReactComponent.MenuSubMenuItem>
+		<Spicetify.ReactComponent.MenuItem
+			onClick={() => props.onEnterFullscreen()}
+			trailingIcon={<SpotifyIcon name="fullscreen" size={16} />}
+		>
+			Enter Fullscreen
+		</Spicetify.ReactComponent.MenuItem>
 		<Spicetify.ReactComponent.MenuItem
 			onClick={() => props.onOpenWindow()}
 			trailingIcon={<SpotifyIcon name="external-link" size={16} />}
