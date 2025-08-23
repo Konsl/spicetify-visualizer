@@ -1,3 +1,7 @@
+:global(.main-topBar-container):has(~ :global(.main-view-container) main > :global(.visualizer-container)) {
+	pointer-events: none !important;
+}
+
 :global(.visualizer-container) {
 	// fill available space
 	position: absolute;
