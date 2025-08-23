@@ -195,9 +195,8 @@ export default function App(props: { isSecondaryWindow?: boolean; initialRendere
 								containerRef.current?.requestFullscreen();
 							}}
 							onOpenWindow={() => {
-								if (!createVisualizerWindow(rendererId)) {
-									Spicetify.showNotification("Failed to open a new window", true);
-								}
+								const error = createVisualizerWindow(rendererId);
+								if (error) Spicetify.showNotification(`Failed to open window: ${error}`, true);
 							}}
 							onSelectRenderer={id => setRendererId(id)}
 						/>

@@ -1,10 +1,10 @@
 import React from "react";
 import App from "./app";
 
-export function createVisualizerWindow(rendererId: string) {
+export function createVisualizerWindow(rendererId: string): string | null {
 	try {
 		const win = window.open();
-		if (!win) return false;
+		if (!win) return `window.open returned ${win}`;
 
 		document.querySelectorAll("style, link[rel=stylesheet]").forEach(node => {
 			const clonedNode = win.document.importNode(node, true);
@@ -18,8 +18,11 @@ export function createVisualizerWindow(rendererId: string) {
 
 		// TODO: unmount when the window closes
 
-		return true;
-	} catch {
-		return false;
+		return null;
+	} catch (e) {
+		console.error("[Visualizer]", "error opening popup window", e);
+
+		if (!e) return "unknown error";
+		return `${e}`;
 	}
 }
