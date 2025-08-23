@@ -190,6 +190,7 @@ export default function App(props: { isSecondaryWindow?: boolean; initialRendere
 						<MainMenuButton
 							className={styles.main_menu_button}
 							renderers={RENDERERS}
+							currentRendererId={rendererId}
 							onEnterFullscreen={() => {
 								containerRef.current?.requestFullscreen();
 							}}
