@@ -1,13 +1,8 @@
-type ModuleState = { state: "uninitialized" } | { state: "failed" } | { state: "succeeded"; value: unknown };
+type ModuleState = { state: "failed" } | { state: "succeeded"; value: unknown };
 
 export class SpotifyModules {
 	private static modules: unknown[] | null = null;
-
-	private static state: Record<string, ModuleState> = {
-		metadataService: { state: "uninitialized" },
-		createTransport: { state: "uninitialized" },
-		styleSheetManager: { state: "uninitialized" }
-	};
+	private static loadedModules: Record<string, ModuleState> = {};
 
 	private static init() {
 		const webpack = (window as any).webpackChunkclient_web ?? (window as any).webpackChunkopen;
@@ -24,28 +19,27 @@ export class SpotifyModules {
 			.flat();
 	}
 
-	private static getValue(key: string, filterFn: (m: unknown) => unknown): unknown | null {
-		if (!(key in this.state)) return null;
+	private static getValue(cacheKey: string, filterFn: (m: unknown) => unknown): unknown | null {
 		if (!this.modules) this.init();
 
-		const state = this.state[key];
-		if (state.state === "failed") return null;
-		if (state.state === "succeeded") return state.value;
+		if (!(cacheKey in this.loadedModules)) {
+			const candidates = this.modules!.filter(filterFn);
 
-		const candidates = this.modules!.filter(filterFn);
-		if (candidates.length === 1) {
-			this.state[key] = {
-				state: "succeeded",
-				value: candidates[0]
-			};
-			return candidates[0];
+			if (candidates.length === 1) {
+				this.loadedModules[cacheKey] = {
+					state: "succeeded",
+					value: candidates[0]
+				};
+			} else {
+				this.loadedModules[cacheKey] = {
+					state: "failed"
+				};
+			}
 		}
 
-		this.state[key] = {
-			state: "failed"
-		};
-
-		return null;
+		const state = this.loadedModules[cacheKey];
+		if (state.state === "failed") return null;
+		if (state.state === "succeeded") return state.value;
 	}
 
 	public static getMetadataService(): unknown | null {
