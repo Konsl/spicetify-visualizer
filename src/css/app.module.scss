@@ -8,7 +8,11 @@
 	inset: 0;
 }
 
-:global(.visualizer-container) > *:not(.main_menu_button) {
+:global(.visualizer-container) > [data-tippy-root] {
+	transform: translate(-10px, 68px) !important;
+}
+
+:global(.visualizer-container) > *:not(.main_menu_button, [data-tippy-root]) {
 	position: absolute;
 
 	top: 50%;

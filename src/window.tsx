@@ -1,22 +1,41 @@
 import React from "react";
 import App from "./app";
+import { SpotifyModules } from "./modules";
 
 export function createVisualizerWindow(rendererId: string): string | null {
 	try {
 		const win = window.open();
 		if (!win) return `window.open returned ${win}`;
+		const popupDocument = win.document;
 
-		document.querySelectorAll("style, link[rel=stylesheet]").forEach(node => {
-			const clonedNode = win.document.importNode(node, true);
-			win.document.head.appendChild(clonedNode);
+		Array.from(document.styleSheets).forEach(s => {
+			if (!s.ownerNode || !("tagName" in s.ownerNode)) return;
+			const node = s.ownerNode;
+
+			const clonedNode = popupDocument.importNode(node, true);
+			popupDocument.head.appendChild(clonedNode);
 		});
 
-		win.document.documentElement.className = document.documentElement.className;
-		win.document.body.className = document.body.className;
+		popupDocument.documentElement.className = document.documentElement.className;
+		popupDocument.body.className = document.body.className;
 
-		Spicetify.ReactDOM.render(<App isSecondaryWindow={true} initialRenderer={rendererId} />, win.document.body);
+		const StyleSheetManager = SpotifyModules.getStyleSheetManager() as any;
+		const destructor = Spicetify.ReactDOM.unmountComponentAtNode(popupDocument.body);
+		const visualizerNode = <App isSecondaryWindow={true} onWindowDestroyed={destructor} initialRenderer={rendererId} />;
 
-		// TODO: unmount when the window closes
+		if (StyleSheetManager) {
+			Spicetify.ReactDOM.render(
+				<StyleSheetManager target={popupDocument.head}>{visualizerNode}</StyleSheetManager>,
+				popupDocument.body
+			);
+		} else {
+			Spicetify.showNotification(
+				"[Visualizer] Could not find StyleSheetManager. Styles in popup window propably won't work.",
+				true
+			);
+
+			Spicetify.ReactDOM.render(visualizerNode, popupDocument.body);
+		}
 
 		return null;
 	} catch (e) {

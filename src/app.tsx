@@ -10,6 +10,7 @@ import DebugVisualizer from "./components/renderer/DebugVisualizer";
 import SpectrumVisualizer from "./components/renderer/SpectrumVisualizer";
 import { MainMenuButton } from "./menu";
 import { createVisualizerWindow } from "./window";
+import { useFullscreenElement } from "./hooks";
 
 export type RendererProps = {
 	isEnabled: boolean;
@@ -50,11 +51,14 @@ type VisualizerState =
 			errorData: ErrorData;
 	  };
 
-export default function App(props: { isSecondaryWindow?: boolean; initialRenderer?: string }) {
+export default function App(props: { isSecondaryWindow?: boolean; onWindowDestroyed?: () => {}; initialRenderer?: string }) {
 	const [rendererId, setRendererId] = useState<string>(props.initialRenderer || "ncs");
 	const Renderer = RENDERERS.find(v => v.id === rendererId)?.renderer;
 
 	const containerRef = useRef<HTMLDivElement | null>(null);
+	if (containerRef.current && !containerRef.current.ownerDocument.defaultView) props.onWindowDestroyed?.();
+
+	const isFullscreen = !!useFullscreenElement(containerRef.current?.ownerDocument);
 
 	const [state, setState] = useState<VisualizerState>({ state: "loading" });
 	const [trackData, setTrackData] = useState<{ audioAnalysis?: SpotifyAudioAnalysis; themeColor: Spicetify.Color }>({
@@ -186,21 +190,24 @@ export default function App(props: { isSecondaryWindow?: boolean; initialRendere
 							/>
 						)}
 					</ErrorHandlerContext.Provider>
-					{props.isSecondaryWindow || (
-						<MainMenuButton
-							className={styles.main_menu_button}
-							renderers={RENDERERS}
-							currentRendererId={rendererId}
-							onEnterFullscreen={() => {
-								containerRef.current?.requestFullscreen();
-							}}
-							onOpenWindow={() => {
-								const error = createVisualizerWindow(rendererId);
-								if (error) Spicetify.showNotification(`Failed to open window: ${error}`, true);
-							}}
-							onSelectRenderer={id => setRendererId(id)}
-						/>
-					)}
+					<MainMenuButton
+						className={styles.main_menu_button}
+						renderInline={props.isSecondaryWindow || isFullscreen}
+						renderers={RENDERERS}
+						currentRendererId={rendererId}
+						isFullscreen={isFullscreen}
+						onEnterFullscreen={() => {
+							containerRef.current?.requestFullscreen();
+						}}
+						onExitFullscreen={() => {
+							containerRef.current?.ownerDocument.exitFullscreen();
+						}}
+						onOpenWindow={() => {
+							const error = createVisualizerWindow(rendererId);
+							if (error) Spicetify.showNotification(`Failed to open window: ${error}`, true);
+						}}
+						onSelectRenderer={id => setRendererId(id)}
+					/>
 				</>
 			)}
 

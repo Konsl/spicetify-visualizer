@@ -1,3 +1,5 @@
+import { SpotifyModules } from "./modules";
+
 export enum ExtensionKind {
 	UNKNOWN_EXTENSION = 0,
 	EXTRACTED_COLOR = 23 // type.googleapis.com/spotify.context_track_color.ColorResult
@@ -16,42 +18,20 @@ export class MetadataService {
 	serviceDescriptor: any;
 
 	public constructor() {
-		const webpack = (window as any).webpackChunkclient_web ?? (window as any).webpackChunkopen;
-		const require = webpack.push([[Symbol()], {}, (re: any) => re]);
-		const cache = Object.keys(require.m).map(id => require(id));
-		const modules = cache
-			.filter(module => typeof module === "object")
-			.map(module => {
-				try {
-					return Object.values(module);
-				} catch {}
-			})
-			.flat();
+		const metadataService = SpotifyModules.getMetadataService();
+		const createTransport = SpotifyModules.getCreateTransport();
 
-		const metadataService = modules.filter(
-			m =>
-				m &&
-				typeof m === "function" &&
-				"SERVICE_ID" in m &&
-				m.SERVICE_ID === "spotify.mdata_esperanto.proto.MetadataService"
-		);
-		const createTransport = modules.filter(
-			m =>
-				m &&
-				typeof m === "function" &&
-				m.toString().includes("executeEsperantoCall") &&
-				m.toString().includes("cancelEsperantoCall")
-		);
+		if (!metadataService) return;
+		if (!createTransport) return;
 
-		if (metadataService.length !== 1) return;
-		if (createTransport.length !== 1) return;
-
-		this.serviceDescriptor = metadataService[0] as any;
-		this.service = new this.serviceDescriptor((createTransport[0] as any)());
+		this.serviceDescriptor = metadataService as any;
+		this.service = new this.serviceDescriptor((createTransport as any)());
 	}
 
 	public fetch(kind: ExtensionKind, entityUri: string): Promise<{ typeUrl: string; value: Uint8Array }> {
 		return new Promise((resolve, reject) => {
+			if (!this.service || !this.serviceDescriptor) reject(CacheStatus.UNKNOWN);
+
 			const cancel = this.service.observe(
 				this.serviceDescriptor.METHODS.observe.requestType.fromPartial({
 					extensionQuery: [
