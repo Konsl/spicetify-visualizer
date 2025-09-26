@@ -2,10 +2,37 @@ import React from "react";
 import App from "./app";
 import { SpotifyModules } from "./modules";
 
-export function createVisualizerWindow(rendererId: string): string | null {
+export async function createVisualizerWindow(rendererId: string) {
 	try {
-		const win = window.open();
-		if (!win) return `window.open returned ${win}`;
+		let win = window.open();
+		if (!win) {
+			let errorMessage = "fallback PiP API is not available";
+
+			if ((window as any).documentPictureInPicture) {
+				if ((window as any).documentPictureInPicture.window) errorMessage = "cannot open another PiP window";
+				else
+					win = await (window as any).documentPictureInPicture.requestWindow().catch((e: any) => {
+						if (e) errorMessage = `${e}`;
+						else errorMessage = "unknown error";
+						return null;
+					});
+			}
+
+			if (!win) {
+				Spicetify.showNotification(
+					<span>
+						Failed to open window: {errorMessage}. Try with devtools using{" "}
+						<code style={{ fontSize: "12px", background: "rgba(0 0 0 / 0.2)", borderRadius: "4px", padding: "2px" }}>
+							spicetify enable-devtools
+						</code>
+						.
+					</span>,
+					true
+				);
+				return;
+			}
+		}
+
 		const popupDocument = win.document;
 
 		Array.from(document.styleSheets).forEach(s => {
@@ -36,12 +63,12 @@ export function createVisualizerWindow(rendererId: string): string | null {
 
 			Spicetify.ReactDOM.render(visualizerNode, popupDocument.body);
 		}
-
-		return null;
 	} catch (e) {
 		console.error("[Visualizer]", "error opening popup window", e);
 
-		if (!e) return "unknown error";
-		return `${e}`;
+		let error = "unknown error";
+		if (e) error = `${e}`;
+
+		Spicetify.showNotification(`Failed to open window: ${error}`, true);
 	}
 }
