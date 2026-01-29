@@ -5,8 +5,10 @@ export class SpotifyModules {
 	private static loadedModules: Record<string, ModuleState> = {};
 
 	private static init() {
-		const webpack = (window as any).webpackChunkclient_web ?? (window as any).webpackChunkopen;
-		const require = webpack.push([[Symbol()], {}, (re: any) => re]);
+		const webpack =
+			(window as { webpackChunkclient_web?: any; webpackChunkopen?: any }).webpackChunkclient_web ??
+			(window as any).webpackChunkopen;
+		const require = webpack.push([[Symbol("visualizer")], {}, (re: (id: string) => unknown) => re]);
 		const cache = Object.keys(require.m).map(id => require(id));
 
 		this.modules = cache

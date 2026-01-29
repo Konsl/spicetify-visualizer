@@ -137,3 +137,12 @@ export function sampleAccumulatedIntegral(amplitudeCurve: CurveEntry[], position
 
 	return (p1.accumulatedIntegral ?? 0) + integrateLinearSegment(p1, mid);
 }
+
+export function resolveCSSVariable(variableName: string): string {
+	if (typeof window === "undefined") return "#FFFFFF";
+	return window.getComputedStyle(document.documentElement).getPropertyValue(variableName).trim() || "#FFFFFF";
+}
+
+export function isValidHexColor(color: string): boolean {
+	return /^#([0-9A-Fa-f]{3}){1,2}$/.test(color);
+}

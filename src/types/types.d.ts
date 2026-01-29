@@ -1,5 +1,32 @@
 type PlayerEventListener = Parameters<typeof Spicetify.Player.removeEventListener>[1];
 
+type ModuleState = { state: "failed" } | { state: "succeeded"; value: unknown };
+
+interface EsperantoResponse {
+	pendingResponse: boolean;
+	extensionResult: {
+		status: number;
+		details: {
+			cacheStatus: number;
+		};
+		extensionData: {
+			typeUrl: string;
+			value: Uint8Array;
+		};
+	}[];
+}
+
+interface EsperantoService {
+	observe(request: unknown, callback: (response: EsperantoResponse) => void): { cancel(): void };
+	METHODS: {
+		observe: {
+			requestType: {
+				fromPartial(data: unknown): unknown;
+			};
+		};
+	};
+}
+
 namespace SpotifyAudioAnalysis {
 	interface Meta {
 		analyzer_version: string;

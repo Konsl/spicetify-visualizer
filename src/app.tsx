@@ -11,6 +11,8 @@ import SpectrumVisualizer from "./components/renderer/SpectrumVisualizer";
 import { MainMenuButton } from "./menu";
 import { createVisualizerWindow } from "./window";
 import { useFullscreenElement } from "./hooks";
+import { ColorSource, getSettings, VisualizerSettings } from "./settings";
+import { resolveCSSVariable } from "./utils";
 
 export type RendererProps = {
 	isEnabled: boolean;
@@ -61,13 +63,35 @@ export default function App(props: { isSecondaryWindow?: boolean; onWindowDestro
 	const isFullscreen = !!useFullscreenElement(containerRef.current?.ownerDocument);
 
 	const [state, setState] = useState<VisualizerState>({ state: "loading" });
-	const [trackData, setTrackData] = useState<{ audioAnalysis?: SpotifyAudioAnalysis; themeColor: Spicetify.Color }>({
-		themeColor: Spicetify.Color.fromHex("#535353")
+	const [settings, setSettings] = useState<VisualizerSettings>(getSettings());
+	const [trackData, setTrackData] = useState<{ audioAnalysis?: SpotifyAudioAnalysis; extractedColor: Spicetify.Color }>({
+		extractedColor: Spicetify.Color.fromHex("#535353")
 	});
+
+	const visualizerColor = useMemo(() => {
+		switch (settings.colorSource) {
+			case ColorSource.THEME:
+				try {
+					const hex = resolveCSSVariable("--spice-accent");
+					return Spicetify.Color.fromHex(hex);
+				} catch {
+					return Spicetify.Color.fromHex("#1db954");
+				}
+			case ColorSource.CUSTOM:
+				try {
+					return Spicetify.Color.fromHex(settings.customColor);
+				} catch {
+					return Spicetify.Color.fromHex("#FFFFFF");
+				}
+			case ColorSource.EXTRACTED:
+			default:
+				return trackData.extractedColor;
+		}
+	}, [settings, trackData.extractedColor]);
 
 	const updateState = useCallback(
 		(newState: VisualizerState) =>
-			setState(oldState => {
+			setState((oldState: VisualizerState) => {
 				if (oldState.state === "error" && oldState.errorData.recovery === ErrorRecovery.NONE) return oldState;
 
 				return newState;
@@ -111,8 +135,10 @@ export default function App(props: { isSecondaryWindow?: boolean; onWindowDestro
 				Spicetify.CosmosAsync.get(analysisRequestUrl).catch(e => console.error("[Visualizer]", e)) as Promise<unknown>,
 				metadataService
 					.fetch(ExtensionKind.EXTRACTED_COLOR, item.metadata.image_url)
-					.catch(s => console.error(`[Visualizer] Could not load extracted color metadata. Status: ${CacheStatus[s]}`))
-					.then(colors => {
+					.catch((s: CacheStatus) =>
+						console.error(`[Visualizer] Could not load extracted color metadata. Status: ${CacheStatus[s]}`)
+					)
+					.then((colors: { value: Uint8Array; typeUrl: string } | null | void) => {
 						if (
 							!colors ||
 							colors.value.length === 0 ||
@@ -158,11 +184,20 @@ export default function App(props: { isSecondaryWindow?: boolean; onWindowDestro
 				}
 			}
 
-			setTrackData({ audioAnalysis: audioAnalysis as SpotifyAudioAnalysis, themeColor: vibrantColor });
+			setTrackData({ audioAnalysis: audioAnalysis as SpotifyAudioAnalysis, extractedColor: vibrantColor });
 			updateState({ state: "running" });
 		},
 		[metadataService]
 	);
+
+	useEffect(() => {
+		const handleSettingsChange = () => {
+			setSettings(getSettings());
+		};
+
+		window.addEventListener("visualizer-settings-changed", handleSettingsChange);
+		return () => window.removeEventListener("visualizer-settings-changed", handleSettingsChange);
+	}, []);
 
 	useEffect(() => {
 		if (isUnrecoverableError) return;
@@ -186,7 +221,7 @@ export default function App(props: { isSecondaryWindow?: boolean; onWindowDestro
 							<Renderer
 								isEnabled={state.state === "running"}
 								audioAnalysis={trackData.audioAnalysis}
-								themeColor={trackData.themeColor}
+								themeColor={visualizerColor}
 							/>
 						)}
 					</ErrorHandlerContext.Provider>
@@ -203,7 +238,7 @@ export default function App(props: { isSecondaryWindow?: boolean; onWindowDestro
 							containerRef.current?.ownerDocument.exitFullscreen();
 						}}
 						onOpenWindow={() => createVisualizerWindow(rendererId)}
-						onSelectRenderer={id => setRendererId(id)}
+						onSelectRenderer={(id: string) => setRendererId(id)}
 					/>
 				</>
 			)}
