@@ -14,8 +14,8 @@ export enum CacheStatus {
 }
 
 export class MetadataService {
-	service: any;
-	serviceDescriptor: any;
+	service: EsperantoService | null = null;
+	serviceDescriptor: any | null = null;
 
 	public constructor() {
 		const metadataService = SpotifyModules.getMetadataService();
@@ -24,13 +24,16 @@ export class MetadataService {
 		if (!metadataService) return;
 		if (!createTransport) return;
 
-		this.serviceDescriptor = metadataService as any;
-		this.service = new this.serviceDescriptor((createTransport as any)());
+		this.serviceDescriptor = metadataService;
+		this.service = new (this.serviceDescriptor as any)((createTransport as () => unknown)());
 	}
 
 	public fetch(kind: ExtensionKind, entityUri: string): Promise<{ typeUrl: string; value: Uint8Array }> {
 		return new Promise((resolve, reject) => {
-			if (!this.service || !this.serviceDescriptor) reject(CacheStatus.UNKNOWN);
+			if (!this.service || !this.serviceDescriptor) {
+				reject(CacheStatus.UNKNOWN);
+				return;
+			}
 
 			const cancel = this.service.observe(
 				this.serviceDescriptor.METHODS.observe.requestType.fromPartial({
@@ -41,7 +44,7 @@ export class MetadataService {
 						}
 					]
 				}),
-				(response: any) => {
+				(response: EsperantoResponse) => {
 					if (response.pendingResponse) return;
 					cancel.cancel();
 
