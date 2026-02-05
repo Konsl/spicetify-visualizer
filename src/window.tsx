@@ -57,7 +57,7 @@ export async function createVisualizerWindow(rendererId: string) {
 			);
 		} else {
 			Spicetify.showNotification(
-				"[Visualizer] Could not find StyleSheetManager. Styles in popup window propably won't work.",
+				"[Visualizer] Could not find StyleSheetManager. Styles in popup window probably won't work.",
 				true
 			);
 
