@@ -2,15 +2,13 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import styles from "./css/app.module.scss";
 import LoadingIcon from "./components/LoadingIcon";
 import NCSVisualizer from "./components/renderer/NCSVisualizer";
-import { CacheStatus, ExtensionKind, MetadataService } from "./metadata";
-import { parseProtobuf } from "./protobuf/defs";
-import { ColorResult } from "./protobuf/ColorResult";
 import { ErrorData, ErrorHandlerContext, ErrorRecovery } from "./error";
 import DebugVisualizer from "./components/renderer/DebugVisualizer";
 import SpectrumVisualizer from "./components/renderer/SpectrumVisualizer";
 import { MainMenuButton } from "./menu";
 import { createVisualizerWindow } from "./window";
 import { useFullscreenElement } from "./hooks";
+import { CacheStatus, ExtensionKind, MetadataService, parseProtobuf, ColorResult } from "spicetify-utils";
 
 export type RendererProps = {
 	isEnabled: boolean;
@@ -51,7 +49,11 @@ type VisualizerState =
 			errorData: ErrorData;
 	  };
 
-export default function App(props: { isSecondaryWindow?: boolean; onWindowDestroyed?: () => {}; initialRenderer?: string }) {
+export default function App(props: {
+	isSecondaryWindow?: boolean;
+	onWindowDestroyed?: () => {};
+	initialRenderer?: string;
+}) {
 	const [rendererId, setRendererId] = useState<string>(props.initialRenderer || "ncs");
 	const Renderer = RENDERERS.find(v => v.id === rendererId)?.renderer;
 
@@ -61,7 +63,10 @@ export default function App(props: { isSecondaryWindow?: boolean; onWindowDestro
 	const isFullscreen = !!useFullscreenElement(containerRef.current?.ownerDocument);
 
 	const [state, setState] = useState<VisualizerState>({ state: "loading" });
-	const [trackData, setTrackData] = useState<{ audioAnalysis?: SpotifyAudioAnalysis; themeColor: Spicetify.Color }>({
+	const [trackData, setTrackData] = useState<{
+		audioAnalysis?: SpotifyAudioAnalysis;
+		themeColor: Spicetify.Color;
+	}>({
 		themeColor: Spicetify.Color.fromHex("#535353")
 	});
 
@@ -100,7 +105,10 @@ export default function App(props: { isSecondaryWindow?: boolean; onWindowDestro
 
 			const uri = Spicetify.URI.fromString(item.uri);
 			if (uri.type !== Spicetify.URI.Type.TRACK) {
-				onError("Error: The type of track you're listening to is currently not supported", ErrorRecovery.SONG_CHANGE);
+				onError(
+					"Error: The type of track you're listening to is currently not supported",
+					ErrorRecovery.SONG_CHANGE
+				);
 				return;
 			}
 
@@ -108,10 +116,14 @@ export default function App(props: { isSecondaryWindow?: boolean; onWindowDestro
 
 			const analysisRequestUrl = `https://spclient.wg.spotify.com/audio-attributes/v1/audio-analysis/${uri.id}?format=json`;
 			const [audioAnalysis, vibrantColor] = await Promise.all([
-				Spicetify.CosmosAsync.get(analysisRequestUrl).catch(e => console.error("[Visualizer]", e)) as Promise<unknown>,
+				Spicetify.CosmosAsync.get(analysisRequestUrl).catch(e =>
+					console.error("[Visualizer]", e)
+				) as Promise<unknown>,
 				metadataService
 					.fetch(ExtensionKind.EXTRACTED_COLOR, item.metadata.image_url)
-					.catch(s => console.error(`[Visualizer] Could not load extracted color metadata. Status: ${CacheStatus[s]}`))
+					.catch(s =>
+						console.error(`[Visualizer] Could not load extracted color metadata. Status: ${CacheStatus[s]}`)
+					)
 					.then(colors => {
 						if (
 							!colors ||
@@ -214,7 +226,9 @@ export default function App(props: { isSecondaryWindow?: boolean; onWindowDestro
 				<div className={styles.error_container}>
 					<div className={styles.error_message}>{state.errorData.message}</div>
 					{state.errorData.recovery === ErrorRecovery.MANUAL && (
-						<Spicetify.ReactComponent.ButtonPrimary onClick={() => updatePlayerState(Spicetify.Player.data)}>
+						<Spicetify.ReactComponent.ButtonPrimary
+							onClick={() => updatePlayerState(Spicetify.Player.data)}
+						>
 							Try again
 						</Spicetify.ReactComponent.ButtonPrimary>
 					)}

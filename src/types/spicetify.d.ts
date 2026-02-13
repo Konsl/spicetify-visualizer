@@ -1238,7 +1238,13 @@ declare namespace Spicetify {
 			 * List of valid icons to use.
 			 */
 			static readonly iconList: Icon[];
-			constructor(name: string, onClick: OnClickCallback, shouldAdd?: ShouldAddCallback, icon?: Icon, disabled?: boolean);
+			constructor(
+				name: string,
+				onClick: OnClickCallback,
+				shouldAdd?: ShouldAddCallback,
+				icon?: Icon,
+				disabled?: boolean
+			);
 			name: string;
 			icon: Icon | string;
 			disabled: boolean;
@@ -1373,7 +1379,11 @@ declare namespace Spicetify {
 			 */
 			children:
 				| Element
-				| ((isOpen?: boolean, handleContextMenu?: (e: MouseEvent) => void, ref?: (e: Element) => void) => Element);
+				| ((
+						isOpen?: boolean,
+						handleContextMenu?: (e: MouseEvent) => void,
+						ref?: (e: Element) => void
+				  ) => Element);
 		};
 		type MenuProps = {
 			/**
@@ -2211,7 +2221,13 @@ declare namespace Spicetify {
 			contextUri?: string,
 			sectionIndex?: number,
 			dropOriginUri?: string
-		): (event: React.DragEvent, uris?: string[], label?: string, contextUri?: string, sectionIndex?: number) => void;
+		): (
+			event: React.DragEvent,
+			uris?: string[],
+			label?: string,
+			contextUri?: string,
+			sectionIndex?: number
+		) => void;
 
 		/**
 		 * React Hook to use panel state

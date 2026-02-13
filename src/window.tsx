@@ -1,6 +1,6 @@
 import React from "react";
 import App from "./app";
-import { SpotifyModules } from "./modules";
+import { SpotifyModules } from "spicetify-utils";
 
 export async function createVisualizerWindow(rendererId: string) {
 	try {
@@ -22,7 +22,14 @@ export async function createVisualizerWindow(rendererId: string) {
 				Spicetify.showNotification(
 					<span>
 						Failed to open window: {errorMessage}. Try with devtools using{" "}
-						<code style={{ fontSize: "12px", background: "rgba(0 0 0 / 0.2)", borderRadius: "4px", padding: "2px" }}>
+						<code
+							style={{
+								fontSize: "12px",
+								background: "rgba(0 0 0 / 0.2)",
+								borderRadius: "4px",
+								padding: "2px"
+							}}
+						>
 							spicetify enable-devtools
 						</code>
 						.
@@ -48,7 +55,9 @@ export async function createVisualizerWindow(rendererId: string) {
 
 		const StyleSheetManager = SpotifyModules.getStyleSheetManager() as any;
 		const destructor = Spicetify.ReactDOM.unmountComponentAtNode(popupDocument.body);
-		const visualizerNode = <App isSecondaryWindow={true} onWindowDestroyed={destructor} initialRenderer={rendererId} />;
+		const visualizerNode = (
+			<App isSecondaryWindow={true} onWindowDestroyed={destructor} initialRenderer={rendererId} />
+		);
 
 		if (StyleSheetManager) {
 			Spicetify.ReactDOM.render(

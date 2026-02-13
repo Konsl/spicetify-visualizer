@@ -49,7 +49,11 @@ const MainMenu = React.memo((props: MainMenuProps) => (
 
 export const MainMenuButton = React.memo((props: MainMenuProps & { className: string; renderInline?: boolean }) => {
 	return (
-		<Spicetify.ReactComponent.ContextMenu trigger="click" renderInline={props.renderInline} menu={<MainMenu {...props} />}>
+		<Spicetify.ReactComponent.ContextMenu
+			trigger="click"
+			renderInline={props.renderInline}
+			menu={<MainMenu {...props} />}
+		>
 			<Spicetify.ReactComponent.ButtonSecondary
 				aria-label="menu"
 				className={props.className}

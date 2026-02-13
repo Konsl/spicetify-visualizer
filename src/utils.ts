@@ -1,4 +1,8 @@
-export function binarySearchIndex<T>(array: T[], converter: (value: T, index: number) => number, position: number): number {
+export function binarySearchIndex<T>(
+	array: T[],
+	converter: (value: T, index: number) => number,
+	position: number
+): number {
 	let lowerBound = 0;
 	let upperBound = array.length;
 
@@ -70,7 +74,11 @@ export function sampleSegmentedFunction<T>(
 	);
 }
 
-export function sampleAmplitudeMovingAverage(amplitudeCurve: CurveEntry[], position: number, windowSize: number): number {
+export function sampleAmplitudeMovingAverage(
+	amplitudeCurve: CurveEntry[],
+	position: number,
+	windowSize: number
+): number {
 	if (windowSize == 0)
 		return sampleSegmentedFunction(
 			amplitudeCurve,

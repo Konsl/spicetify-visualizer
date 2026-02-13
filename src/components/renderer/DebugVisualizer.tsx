@@ -149,7 +149,13 @@ const SECTIONS: Section[] = [
 				ctx.lineTo(xMax, yMax);
 
 				if (i === audio.analysis.segments.length - 1) {
-					const xEnd = mapLinear(segment.start + segment.duration, time.start, time.end, area.x, area.x + area.width);
+					const xEnd = mapLinear(
+						segment.start + segment.duration,
+						time.start,
+						time.end,
+						area.x,
+						area.x + area.width
+					);
 					const yEnd = mapLinear(transformLoudness(segment.loudness_end), 0, 1, area.y + area.height, area.y);
 
 					ctx.lineTo(xEnd, yEnd);
@@ -173,7 +179,13 @@ const SECTIONS: Section[] = [
 				const segment = audio.analysis.segments[i];
 
 				const xStart = mapLinear(segment.start, time.start, time.end, area.x, area.x + area.width);
-				const xEnd = mapLinear(segment.start + segment.duration, time.start, time.end, area.x, area.x + area.width);
+				const xEnd = mapLinear(
+					segment.start + segment.duration,
+					time.start,
+					time.end,
+					area.x,
+					area.x + area.width
+				);
 
 				ctx.fillStyle = `rgba(255, 255, 255, ${segment.confidence})`;
 				ctx.fillRect(xStart, area.y, xEnd - xStart, area.height);
@@ -203,7 +215,13 @@ const SECTIONS: Section[] = [
 					const value = mapLinear(Math.tanh(0.02 * segment.timbre[t]), -1, 1, 0, 1);
 
 					const xStart = mapLinear(segment.start, time.start, time.end, area.x, area.x + area.width);
-					const xEnd = mapLinear(segment.start + segment.duration, time.start, time.end, area.x, area.x + area.width);
+					const xEnd = mapLinear(
+						segment.start + segment.duration,
+						time.start,
+						time.end,
+						area.x,
+						area.x + area.width
+					);
 
 					const y = area.y + (t / 12) * area.height;
 
@@ -234,7 +252,13 @@ const SECTIONS: Section[] = [
 					const segment = audio.analysis.segments[i];
 
 					const xStart = mapLinear(segment.start, time.start, time.end, area.x, area.x + area.width);
-					const xEnd = mapLinear(segment.start + segment.duration, time.start, time.end, area.x, area.x + area.width);
+					const xEnd = mapLinear(
+						segment.start + segment.duration,
+						time.start,
+						time.end,
+						area.x,
+						area.x + area.width
+					);
 
 					const y = area.y + (p / 12) * area.height;
 
@@ -365,7 +389,8 @@ export default function DebugVisualizer(props: RendererProps) {
 		for (const section of contentSections) {
 			const yStart = mapLinear(currentHeight, 0, totalHeight, 0, contentSpace) + currentCount * SECTION_SPACING;
 			const yEnd =
-				mapLinear(currentHeight + section.height, 0, totalHeight, 0, contentSpace) + currentCount * SECTION_SPACING;
+				mapLinear(currentHeight + section.height, 0, totalHeight, 0, contentSpace) +
+				currentCount * SECTION_SPACING;
 
 			currentHeight += section.height;
 			currentCount++;
