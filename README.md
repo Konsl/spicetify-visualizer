@@ -43,5 +43,5 @@ Check if an issue regarding your topic already exists, if not create a new one.
 ---
 
 
-If you have further issues you can open a ticket on [Discord](https://discord.gg/appzM48wXG).
+If you have further issues you can open a ticket on [Discord](https://discord.gg/a48KNBVf45).
 [CSS Snippet for Compatibility with Comfy Theme](https://github.com/Konsl/spicetify-visualizer/issues/21#issuecomment-2050515422)
