@@ -26,8 +26,7 @@
 	right: 10px;
 	transition: opacity 0.3s ease-in-out;
 
-	:global(.visualizer-container):fullscreen &:not(:hover):not(:focus-within):not(:has(> [data-tippy-root])),
-	:global(.visualizer-container):-webkit-full-screen &:not(:hover):not(:focus-within):not(:has(> [data-tippy-root])) {
+	:global(.visualizer-container):is(:fullscreen, :-webkit-full-screen) &:not(:hover, :focus-within, :has(> [data-tippy-root])) {
 		opacity: 0;
 	}
 
