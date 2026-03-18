@@ -24,6 +24,16 @@
 	position: absolute;
 	top: 10px;
 	right: 10px;
+	transition: opacity 0.3s ease-in-out;
+
+	:global(.visualizer-container):is(:fullscreen, :-webkit-full-screen) & {
+		opacity: 0;
+	}
+
+	:global(.visualizer-container):is(:fullscreen, :-webkit-full-screen) &:is(:hover, :focus-within),
+	:global(.visualizer-container):is(:fullscreen, :-webkit-full-screen):has(> [data-tippy-root]) & {
+		opacity: 1;
+	}
 }
 
 .error_container {

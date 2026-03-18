@@ -13,7 +13,8 @@
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",
     "prettier": "^3.5.0",
-    "spicetify-creator": "^1.0.17"
+    "spicetify-creator": "^1.0.17",
+    "spicetify-utils": "github:Konsl/spicetify-utils"
   },
   "dependencies": {
     "fflate": "^0.8.2"
