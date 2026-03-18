@@ -26,14 +26,13 @@
 	right: 10px;
 	transition: opacity 0.3s ease-in-out;
 
-	:global(.visualizer-container):fullscreen &:not(:hover):not(:focus-within),
-	:global(.visualizer-container):-webkit-full-screen &:not(:hover):not(:focus-within) {
+	:global(.visualizer-container):fullscreen &:not(:hover):not(:focus-within):not(:has(> [data-tippy-root])),
+	:global(.visualizer-container):-webkit-full-screen &:not(:hover):not(:focus-within):not(:has(> [data-tippy-root])) {
 		opacity: 0;
 	}
 
-	:global(.visualizer-container):fullscreen:has(> [data-tippy-root]) &,
-	:global(.visualizer-container):-webkit-full-screen:has(> [data-tippy-root]) & {
-		opacity: 1;
+	&:has(> [data-tippy-root]) {
+		opacity: 1 !important;
 	}
 }
 
