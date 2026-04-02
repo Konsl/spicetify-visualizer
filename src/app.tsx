@@ -54,7 +54,24 @@ export default function App(props: {
 	onWindowDestroyed?: () => {};
 	initialRenderer?: string;
 }) {
-	const [rendererId, setRendererId] = useState<string>(props.initialRenderer || "ncs");
+	const [rendererId, setRendererId] = useState<string>(() => {
+		const validIds = new Set(RENDERERS.map(r => r.id));
+
+		const propsRenderer = props.initialRenderer;
+		if (propsRenderer && validIds.has(propsRenderer)) return propsRenderer;
+
+		const searchParams = new URLSearchParams(Spicetify.Platform?.History?.location?.search || "");
+		const searchRenderer = searchParams.get("renderer");
+		if (searchRenderer && validIds.has(searchRenderer)) return searchRenderer;
+
+		return "ncs";
+	});
+	useEffect(() => {
+		const searchParams = new URLSearchParams();
+		searchParams.set("renderer", rendererId);
+
+		Spicetify.Platform?.History?.replace({ search: searchParams.toString() });
+	}, [rendererId]);
 	const Renderer = RENDERERS.find(v => v.id === rendererId)?.renderer;
 
 	const containerRef = useRef<HTMLDivElement | null>(null);
