@@ -1,5 +1,5 @@
 import React from "react";
-import { RendererDefinition } from "./app";
+import { RENDERERS } from "./defs";
 
 const SpotifyIcon = React.memo((props: { name: Spicetify.Icon | "empty"; size: number }) => (
 	<Spicetify.ReactComponent.IconComponent
@@ -10,7 +10,6 @@ const SpotifyIcon = React.memo((props: { name: Spicetify.Icon | "empty"; size: n
 ));
 
 type MainMenuProps = {
-	renderers: RendererDefinition[];
 	currentRendererId: string;
 	isFullscreen: boolean;
 
@@ -23,12 +22,12 @@ type MainMenuProps = {
 const MainMenu = React.memo((props: MainMenuProps) => (
 	<Spicetify.ReactComponent.Menu>
 		<Spicetify.ReactComponent.MenuSubMenuItem displayText="Renderer">
-			{props.renderers.map(v => (
+			{Object.entries(RENDERERS).map(([id, renderer]) => (
 				<Spicetify.ReactComponent.MenuItem
-					onClick={() => props.onSelectRenderer(v.id)}
-					leadingIcon={<SpotifyIcon name={v.id === props.currentRendererId ? "check" : "empty"} size={16} />}
+					onClick={() => props.onSelectRenderer(id)}
+					leadingIcon={<SpotifyIcon name={id === props.currentRendererId ? "check" : "empty"} size={16} />}
 				>
-					{v.name}
+					{renderer.name}
 				</Spicetify.ReactComponent.MenuItem>
 			))}
 		</Spicetify.ReactComponent.MenuSubMenuItem>

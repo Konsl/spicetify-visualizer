@@ -3,7 +3,7 @@ import AnimatedCanvas from "../AnimatedCanvas";
 import { decibelsToAmplitude, binarySearchIndex, sampleSegmentedFunction, smoothstep, mapLinear } from "../../utils";
 import { parseRhythmString } from "../../RhythmString";
 import { ErrorHandlerContext, ErrorRecovery } from "../../error";
-import { RendererProps } from "../../app";
+import { DEFAULT_COLOR, RendererProps } from "../../defs";
 
 type CanvasData = {
 	themeColor: Spicetify.Color;
@@ -21,19 +21,26 @@ type RendererState =
 export default function SpectrumVisualizer(props: RendererProps) {
 	const onError = useContext(ErrorHandlerContext);
 
-	const spectrumData = useMemo(() => {
-		if (!props.audioAnalysis) return [];
+	const audioAnalysis = useMemo(() => {
+		const result = props.trackData.audioAnalysis;
 
-		if (props.audioAnalysis.track.rhythm_version !== 1) {
+		if (result?.error) onError(result.error, ErrorRecovery.MANUAL);
+		return result?.value;
+	}, [props.trackData.audioAnalysis]);
+
+	const spectrumData = useMemo(() => {
+		if (!audioAnalysis) return [];
+
+		if (audioAnalysis.track.rhythm_version !== 1) {
 			onError(
-				`Error: Unsupported rhythmstring version ${props.audioAnalysis.track.rhythm_version}`,
+				`Error: Unsupported rhythmstring version ${audioAnalysis.track.rhythm_version}`,
 				ErrorRecovery.SONG_CHANGE
 			);
 			return [];
 		}
 
-		const segments = props.audioAnalysis.segments;
-		const rhythm = parseRhythmString(props.audioAnalysis.track.rhythmstring);
+		const segments = audioAnalysis.segments;
+		const rhythm = parseRhythmString(audioAnalysis.track.rhythmstring);
 
 		if (segments.length === 0 || rhythm.length === 0) return [];
 
@@ -137,7 +144,7 @@ export default function SpectrumVisualizer(props: RendererProps) {
 		}
 
 		return spectrumData;
-	}, [props.audioAnalysis]);
+	}, [audioAnalysis]);
 
 	const onInit = useCallback((ctx: CanvasRenderingContext2D | null): RendererState => {
 		if (!ctx) {
@@ -185,7 +192,10 @@ export default function SpectrumVisualizer(props: RendererProps) {
 	return (
 		<AnimatedCanvas
 			isEnabled={props.isEnabled}
-			data={{ themeColor: props.themeColor, spectrumData }}
+			data={{
+				themeColor: props.trackData.extractedColor?.value ?? Spicetify.Color.fromHex(DEFAULT_COLOR),
+				spectrumData
+			}}
 			contextType="2d"
 			onInit={onInit}
 			onResize={onResize}

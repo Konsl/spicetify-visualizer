@@ -3,7 +3,7 @@ import AnimatedCanvas from "../AnimatedCanvas";
 import { decibelsToAmplitude, binarySearchIndex, mapLinear } from "../../utils";
 import { parseRhythmString, RhythmString } from "../../RhythmString";
 import { ErrorHandlerContext, ErrorRecovery } from "../../error";
-import { RendererProps } from "../../app";
+import { RendererProps } from "../../defs";
 
 type CanvasData = {
 	barDuration: number;
@@ -303,15 +303,22 @@ const SECTIONS: Section[] = [
 export default function DebugVisualizer(props: RendererProps) {
 	const onError = useContext(ErrorHandlerContext);
 
+	const audioAnalysis = useMemo(() => {
+		const result = props.trackData.audioAnalysis;
+
+		if (result?.error) onError(result.error, ErrorRecovery.MANUAL);
+		return result?.value;
+	}, [props.trackData.audioAnalysis]);
+
 	const barDuration = useMemo(() => {
-		if (!props.audioAnalysis) return 1;
-		return props.audioAnalysis.bars.reduce((acc, val) => acc + val.duration, 0) / props.audioAnalysis.bars.length;
-	}, [props.audioAnalysis]);
+		if (!audioAnalysis) return 1;
+		return audioAnalysis.bars.reduce((acc, val) => acc + val.duration, 0) / audioAnalysis.bars.length;
+	}, [audioAnalysis]);
 
 	const rhythmString = useMemo(() => {
-		if (!props.audioAnalysis) return null;
-		return parseRhythmString(props.audioAnalysis.track.rhythmstring);
-	}, [props.audioAnalysis]);
+		if (!audioAnalysis) return null;
+		return parseRhythmString(audioAnalysis.track.rhythmstring);
+	}, [audioAnalysis]);
 
 	const onInit = useCallback((ctx: CanvasRenderingContext2D | null): RendererState => {
 		if (!ctx) {
@@ -430,7 +437,7 @@ export default function DebugVisualizer(props: RendererProps) {
 	return (
 		<AnimatedCanvas
 			isEnabled={props.isEnabled}
-			data={{ audioAnalysis: props.audioAnalysis, rhythmString, barDuration }}
+			data={{ audioAnalysis, rhythmString, barDuration }}
 			contextType="2d"
 			onInit={onInit}
 			onResize={onResize}

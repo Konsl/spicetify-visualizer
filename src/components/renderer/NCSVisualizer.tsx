@@ -12,13 +12,16 @@ import {
 	fragmentShader as PARTICLE_FRAG_SHADER
 } from "../../shaders/ncs-visualizer/particle";
 import { vertexShader as DOT_VERT_SHADER, fragmentShader as DOT_FRAG_SHADER } from "../../shaders/ncs-visualizer/dot";
-import { vertexShader as BLUR_VERT_SHADER, fragmentShader as BLUR_FRAG_SHADER } from "../../shaders/ncs-visualizer/blur";
+import {
+	vertexShader as BLUR_VERT_SHADER,
+	fragmentShader as BLUR_FRAG_SHADER
+} from "../../shaders/ncs-visualizer/blur";
 import {
 	vertexShader as FINALIZE_VERT_SHADER,
 	fragmentShader as FINALIZE_FRAG_SHADER
 } from "../../shaders/ncs-visualizer/finalize";
 import { ErrorHandlerContext, ErrorRecovery } from "../../error";
-import { RendererProps } from "../../app";
+import { DEFAULT_COLOR, RendererProps } from "../../defs";
 
 type CanvasData = {
 	themeColor: Spicetify.Color;
@@ -82,16 +85,26 @@ type RendererState =
 export default function NCSVisualizer(props: RendererProps) {
 	const onError = useContext(ErrorHandlerContext);
 
-	const amplitudeCurve = useMemo(() => {
-		if (!props.audioAnalysis) return [{ x: 0, y: 0 }];
+	const audioAnalysis = useMemo(() => {
+		const result = props.trackData.audioAnalysis;
 
-		const segments = props.audioAnalysis.segments;
+		if (result?.error) onError(result.error, ErrorRecovery.MANUAL);
+		return result?.value;
+	}, [props.trackData.audioAnalysis]);
+
+	const amplitudeCurve = useMemo(() => {
+		if (!audioAnalysis) return [{ x: 0, y: 0 }];
+
+		const segments = audioAnalysis.segments;
 
 		const amplitudeCurve: CurveEntry[] = segments.flatMap(segment =>
 			segment.loudness_max_time
 				? [
 						{ x: segment.start, y: decibelsToAmplitude(segment.loudness_start) },
-						{ x: segment.start + segment.loudness_max_time, y: decibelsToAmplitude(segment.loudness_max) }
+						{
+							x: segment.start + segment.loudness_max_time,
+							y: decibelsToAmplitude(segment.loudness_max)
+						}
 					]
 				: [{ x: segment.start, y: decibelsToAmplitude(segment.loudness_start) }]
 		);
@@ -112,9 +125,9 @@ export default function NCSVisualizer(props: RendererProps) {
 		}
 
 		return amplitudeCurve;
-	}, [props.audioAnalysis]);
+	}, [audioAnalysis]);
 
-	const seed = props.audioAnalysis?.meta.timestamp ?? 0;
+	const seed = audioAnalysis?.meta.timestamp ?? 0;
 
 	const onInit = useCallback((gl: WebGL2RenderingContext | null): RendererState => {
 		if (!gl) {
@@ -308,13 +321,43 @@ export default function NCSVisualizer(props: RendererProps) {
 		gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
 		gl.bindTexture(gl.TEXTURE_2D, state.dotTexture);
-		gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8, state.viewportSize, state.viewportSize, 0, gl.RED, gl.UNSIGNED_BYTE, null);
+		gl.texImage2D(
+			gl.TEXTURE_2D,
+			0,
+			gl.R8,
+			state.viewportSize,
+			state.viewportSize,
+			0,
+			gl.RED,
+			gl.UNSIGNED_BYTE,
+			null
+		);
 
 		gl.bindTexture(gl.TEXTURE_2D, state.blurXTexture);
-		gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8, state.viewportSize, state.viewportSize, 0, gl.RED, gl.UNSIGNED_BYTE, null);
+		gl.texImage2D(
+			gl.TEXTURE_2D,
+			0,
+			gl.R8,
+			state.viewportSize,
+			state.viewportSize,
+			0,
+			gl.RED,
+			gl.UNSIGNED_BYTE,
+			null
+		);
 
 		gl.bindTexture(gl.TEXTURE_2D, state.blurYTexture);
-		gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8, state.viewportSize, state.viewportSize, 0, gl.RED, gl.UNSIGNED_BYTE, null);
+		gl.texImage2D(
+			gl.TEXTURE_2D,
+			0,
+			gl.R8,
+			state.viewportSize,
+			state.viewportSize,
+			0,
+			gl.RED,
+			gl.UNSIGNED_BYTE,
+			null
+		);
 	}, []);
 
 	const onRender = useCallback((gl: WebGL2RenderingContext | null, data: CanvasData, state: RendererState) => {
@@ -445,7 +488,11 @@ export default function NCSVisualizer(props: RendererProps) {
 	return (
 		<AnimatedCanvas
 			isEnabled={props.isEnabled}
-			data={{ themeColor: props.themeColor, seed, amplitudeCurve }}
+			data={{
+				themeColor: props.trackData.extractedColor?.value ?? Spicetify.Color.fromHex(DEFAULT_COLOR),
+				seed,
+				amplitudeCurve
+			}}
 			contextType="webgl2"
 			onInit={onInit}
 			onResize={onResize}
