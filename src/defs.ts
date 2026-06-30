@@ -52,7 +52,7 @@ export const RENDERERS: Record<string, RendererDefinition> = {
 	},
 	debug: {
 		name: "DEBUG",
-		requiredAudioData: ["audioAnalysis"],
+		requiredAudioData: ["audioAnalysis", "beats", "threebandWaveforms", "vocalActivity"],
 		renderer: DebugVisualizer
 	}
 };
