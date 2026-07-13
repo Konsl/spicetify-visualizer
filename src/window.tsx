@@ -54,7 +54,7 @@ export async function createVisualizerWindow(rendererId: string) {
 		popupDocument.body.className = document.body.className;
 
 		const StyleSheetManager = SpotifyModules.getStyleSheetManager() as any;
-		const destructor = Spicetify.ReactDOM.unmountComponentAtNode(popupDocument.body);
+		const destructor = Spicetify.ReactDOM.unmountComponentAtNode.bind(Spicetify.ReactDOM, popupDocument.body);
 		const visualizerNode = (
 			<App isSecondaryWindow={true} onWindowDestroyed={destructor} initialRenderer={rendererId} />
 		);
