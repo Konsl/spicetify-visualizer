@@ -1,5 +1,6 @@
 import React from "react";
 import { RENDERERS } from "./defs";
+import { AudioSyncManager } from "./audio-sync";
 
 const SpotifyIcon = React.memo((props: { name: Spicetify.Icon | "empty"; size: number }) => (
 	<Spicetify.ReactComponent.IconComponent
@@ -31,6 +32,12 @@ const MainMenu = React.memo((props: MainMenuProps) => (
 				</Spicetify.ReactComponent.MenuItem>
 			))}
 		</Spicetify.ReactComponent.MenuSubMenuItem>
+		<Spicetify.ReactComponent.MenuItem
+			onClick={() => AudioSyncManager.setCorrectLatency(!AudioSyncManager.getCorrectLatency())}
+			trailingIcon={<SpotifyIcon name={AudioSyncManager.getCorrectLatency() ? "check" : "empty"} size={16} />}
+		>
+			Correct latency
+		</Spicetify.ReactComponent.MenuItem>
 		<Spicetify.ReactComponent.MenuItem
 			onClick={() => (props.isFullscreen ? props.onExitFullscreen() : props.onEnterFullscreen())}
 			trailingIcon={<SpotifyIcon name={props.isFullscreen ? "minimize" : "fullscreen"} size={16} />}

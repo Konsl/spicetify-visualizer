@@ -1,9 +1,10 @@
 import React, { useCallback, useContext, useMemo } from "react";
 import AnimatedCanvas from "../AnimatedCanvas";
-import { decibelsToAmplitude, binarySearchIndex, mapLinear } from "../../utils";
+import { decibelsToAmplitude, binarySearchIndex, mapLinear } from "../../math";
 import { parseRhythmString, RhythmString } from "../../RhythmString";
 import { ErrorHandlerContext, ErrorRecovery } from "../../error";
 import { RendererProps, TrackData } from "../../defs";
+import { AudioSyncManager } from "../../audio-sync";
 
 type CanvasData = {
 	barDuration: number;
@@ -502,7 +503,7 @@ export default function DebugVisualizer(props: RendererProps) {
 
 		ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 
-		const progress = Spicetify.Player.getProgress() / 1000;
+		const progress = AudioSyncManager.getProgress();
 		const windowStart = progress - TIME_WINDOW[0] * data.barDuration;
 		const windowEnd = progress + TIME_WINDOW[1] * data.barDuration;
 		const time = {

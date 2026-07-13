@@ -6,7 +6,7 @@ import {
 	mapLinear,
 	integrateLinearSegment,
 	sampleAccumulatedIntegral
-} from "../../utils";
+} from "../../math";
 import {
 	vertexShader as PARTICLE_VERT_SHADER,
 	fragmentShader as PARTICLE_FRAG_SHADER
@@ -22,6 +22,7 @@ import {
 } from "../../shaders/ncs-visualizer/finalize";
 import { ErrorHandlerContext, ErrorRecovery } from "../../error";
 import { DEFAULT_COLOR, RendererProps } from "../../defs";
+import { AudioSyncManager } from "../../audio-sync";
 
 type CanvasData = {
 	themeColor: Spicetify.Color;
@@ -363,7 +364,7 @@ export default function NCSVisualizer(props: RendererProps) {
 	const onRender = useCallback((gl: WebGL2RenderingContext | null, data: CanvasData, state: RendererState) => {
 		if (state.isError || !gl) return;
 
-		const progress = Spicetify.Player.getProgress() / 1000;
+		const progress = AudioSyncManager.getProgress();
 
 		const uNoiseOffset = (0.5 * progress + sampleAccumulatedIntegral(data.amplitudeCurve, progress)) * 75 * 0.01;
 		const uAmplitude = sampleAmplitudeMovingAverage(data.amplitudeCurve, progress, 0.15);

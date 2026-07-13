@@ -7,6 +7,7 @@ import { createVisualizerWindow } from "./window";
 import { useFullscreenElement } from "./hooks";
 import { MetadataService } from "spicetify-utils";
 import { LoaderID, LOADERS, RENDERERS, TrackData } from "./defs";
+import { AudioSyncManager } from "./audio-sync";
 
 type VisualizerState =
 	| {
@@ -49,6 +50,11 @@ export default function App(props: {
 	if (containerRef.current && !containerRef.current.ownerDocument.defaultView) props.onWindowDestroyed?.();
 
 	const isFullscreen = !!useFullscreenElement(containerRef.current?.ownerDocument);
+
+	useEffect(() => {
+		AudioSyncManager.addReference();
+		return AudioSyncManager.removeReference.bind(AudioSyncManager);
+	}, []);
 
 	const [state, setState] = useState<VisualizerState>({ state: "loading" });
 	const cachedTrackData = useRef<CachedTrackData>({

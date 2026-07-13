@@ -1,9 +1,10 @@
 import React, { useCallback, useContext, useMemo } from "react";
 import AnimatedCanvas from "../AnimatedCanvas";
-import { decibelsToAmplitude, binarySearchIndex, sampleSegmentedFunction, smoothstep, mapLinear } from "../../utils";
+import { decibelsToAmplitude, binarySearchIndex, sampleSegmentedFunction, smoothstep, mapLinear } from "../../math";
 import { parseRhythmString } from "../../RhythmString";
 import { ErrorHandlerContext, ErrorRecovery } from "../../error";
 import { DEFAULT_COLOR, RendererProps } from "../../defs";
+import { AudioSyncManager } from "../../audio-sync";
 
 type CanvasData = {
 	themeColor: Spicetify.Color;
@@ -164,7 +165,7 @@ export default function SpectrumVisualizer(props: RendererProps) {
 	const onRender = useCallback((ctx: CanvasRenderingContext2D | null, data: CanvasData, state: RendererState) => {
 		if (state.isError || !ctx) return;
 
-		const progress = Spicetify.Player.getProgress() / 1000;
+		const progress = AudioSyncManager.getProgress();
 		ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 		ctx.fillStyle = data.themeColor.toCSS(Spicetify.Color.CSSFormat.HEX);
 
