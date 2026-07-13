@@ -21,7 +21,7 @@ type RendererState =
 	  };
 
 type Area = { x: number; y: number; width: number; height: number };
-type ProcessedTrackData = { trackData: TrackData; rhythm?: RhythmString };
+type ProcessedTrackData = { trackData: TrackData; rhythm?: RhythmString; waveformMax: number };
 
 type Section = {
 	name: string;
@@ -182,7 +182,7 @@ const SECTIONS: Section[] = [
 				const actualEnd = Math.min(end, path.length - 1);
 				for (let i = start; i <= actualEnd; i++) {
 					const x = mapLinear(i / sampleRate, time.start, time.end, area.x, area.x + area.width);
-					const y = mapLinear(path[i], 0, 255, area.y + area.height, area.y);
+					const y = mapLinear(path[i], 0, audio.waveformMax, area.y + area.height, area.y);
 
 					if (i === start) ctx.moveTo(x, y);
 					else ctx.lineTo(x, y);
@@ -197,7 +197,7 @@ const SECTIONS: Section[] = [
 			const actualEnd = Math.min(end, lows.length - 1, mids.length - 1, highs.length - 1);
 			for (let i = start; i <= actualEnd; i++) {
 				const x = mapLinear(i / sampleRate, time.start, time.end, area.x, area.x + area.width);
-				const y = mapLinear(lows[i] + mids[i] + highs[i], 0, 255, area.y + area.height, area.y);
+				const y = mapLinear(lows[i] + mids[i] + highs[i], 0, audio.waveformMax, area.y + area.height, area.y);
 
 				if (i === start) ctx.moveTo(x, y);
 				else ctx.lineTo(x, y);
@@ -452,11 +452,23 @@ export default function DebugVisualizer(props: RendererProps) {
 		const audioAnalysis = props.trackData.audioAnalysis?.value;
 		const beats = props.trackData.beats?.value;
 
-		let rhythm = audioAnalysis && parseRhythmString(audioAnalysis.track.rhythmstring);
+		const rhythm = audioAnalysis && parseRhythmString(audioAnalysis.track.rhythmstring);
+
+		let waveformMax = 300;
+		const waveforms = props.trackData.threebandWaveforms?.value;
+		const waveformSamples = [waveforms?.lows, waveforms?.mids, waveforms?.highs];
+		if (waveformSamples.every(s => !!s)) {
+			const values = Array(Math.min(...waveformSamples.map(s => s.length)))
+				.fill(0)
+				.map((_, i) => waveformSamples.map(s => s[i]).reduce((a, x) => a + x, 0));
+
+			waveformMax = Math.max(...values);
+		}
 
 		const processedTrackData: ProcessedTrackData = {
 			trackData: props.trackData,
-			rhythm
+			rhythm,
+			waveformMax
 		};
 
 		const supportedSections = SECTIONS.filter(s => s.isSupported(processedTrackData));
