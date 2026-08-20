@@ -24,6 +24,26 @@
 	position: absolute;
 	top: 10px;
 	right: 10px;
+
+	cursor: default;
+	transition: opacity 0.2s ease-in-out;
+}
+
+:global(.visualizer-container):fullscreen {
+	cursor: none;
+
+	&.mouse_moved {
+		cursor: default;
+	}
+
+	.main_menu_button {
+		opacity: 0;
+	}
+
+	.main_menu_button:hover,
+	&:is(:has(> [data-tippy-root]), .mouse_moved) .main_menu_button {
+		opacity: 1;
+	}
 }
 
 .error_container {

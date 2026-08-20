@@ -4,7 +4,7 @@ import LoadingIcon from "./components/LoadingIcon";
 import { ErrorData, ErrorHandlerContext, ErrorRecovery } from "./error";
 import { MainMenuButton } from "./menu";
 import { createVisualizerWindow } from "./window";
-import { useFullscreenElement } from "./hooks";
+import { useFullscreenElement, useMouseRecentlyMoved } from "./hooks";
 import { MetadataService } from "spicetify-utils";
 import { LoaderID, LOADERS, RENDERERS, TrackData } from "./defs";
 import { AudioSyncManager } from "./audio-sync";
@@ -50,6 +50,7 @@ export default function App(props: {
 	if (containerRef.current && !containerRef.current.ownerDocument.defaultView) props.onWindowDestroyed?.();
 
 	const isFullscreen = !!useFullscreenElement(containerRef.current?.ownerDocument);
+	const mouseMoved = useMouseRecentlyMoved(containerRef.current?.ownerDocument);
 
 	useEffect(() => {
 		AudioSyncManager.addReference();
@@ -149,7 +150,7 @@ export default function App(props: {
 	}, [isUnrecoverableError, updatePlayerState, rendererId]);
 
 	return (
-		<div className="visualizer-container" ref={containerRef}>
+		<div className={`visualizer-container ${mouseMoved ? styles.mouse_moved : ""}`} ref={containerRef}>
 			{!isUnrecoverableError && (
 				<>
 					<ErrorHandlerContext.Provider value={onError}>
